@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lady Fresa — Gestor</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root {
+  --red:#C8102E; --red-light:#fdf0f2; --red-mid:#f5c6ce;
+  --green:#1a6b3c; --green-light:#edf7f1;
+  --blue:#1a4a8a; --blue-light:#edf2fb;
+  --amber:#8a5a00; --amber-light:#fdf6e3;
+  --gray-50:#f9f9f8; --gray-100:#f0efed; --gray-200:#e0deda;
+  --gray-400:#9e9b96; --gray-600:#5c5a56; --gray-900:#1a1917;
+  --font:'DM Sans',sans-serif; --mono:'DM Mono',monospace;
+  --r:8px; --rl:12px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--gray-50);color:var(--gray-900);min-height:100vh}
+a{color:var(--blue)}
+
+/* LOGIN */
+.login-page{min-height:100vh;display:flex;align-items:center;justify-content:center}
+.login-card{background:white;border:1px solid var(--gray-200);border-radius:16px;padding:2.5rem;width:340px}
+.login-logo{display:flex;align-items:center;gap:12px;margin-bottom:2rem}
+.logo-circle{width:44px;height:44px;border-radius:50%;background:var(--red);display:flex;align-items:center;justify-content:center;color:white;font-weight:600;font-size:14px}
+.user-btn{width:100%;display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:var(--r);border:1px solid var(--gray-200);background:white;cursor:pointer;margin-bottom:8px;transition:all .15s;text-align:left}
+.user-btn:hover{border-color:var(--red);background:var(--red-light)}
+.uav{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0}
+.av-admin{background:#fde8ec;color:var(--red)}
+.av-user{background:var(--green-light);color:var(--green)}
+
+/* APP */
+.app{display:none;flex-direction:column;min-height:100vh}
+.topbar{background:white;border-bottom:1px solid var(--gray-200);padding:0 1.5rem;height:54px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+.topbar-logo{width:30px;height:30px;border-radius:50%;background:var(--red);display:flex;align-items:center;justify-content:center;color:white;font-size:11px;font-weight:600;margin-right:10px}
+.sync{font-size:11px;font-family:var(--mono);padding:3px 9px;border-radius:20px}
+.sync-ok{background:var(--green-light);color:var(--green)}
+.sync-err{background:#fef3e2;color:#7a4f00}
+.sync-load{background:var(--gray-100);color:var(--gray-600)}
+.sav{font-size:11px;font-family:var(--mono);padding:3px 9px;border-radius:20px;background:#fef3e2;color:#7a4f00;display:none}
+.sav.vis{display:inline-block}
+.small-av{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;margin-right:6px}
+.btn-logout{font-size:12px;color:var(--gray-400);background:transparent;border:none;cursor:pointer;padding:4px 8px;border-radius:var(--r)}
+.btn-logout:hover{color:var(--red);background:var(--red-light)}
+
+/* NAV */
+.nav{background:white;border-bottom:1px solid var(--gray-200);padding:0 1.5rem;display:flex;gap:4px;overflow-x:auto}
+.nav-tab{padding:12px 16px;font-size:13px;color:var(--gray-600);border:none;background:transparent;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;font-family:var(--font);transition:all .15s}
+.nav-tab:hover{color:var(--gray-900)}
+.nav-tab.active{color:var(--red);border-bottom-color:var(--red);font-weight:500}
+
+/* CONTENT */
+.content{padding:1.5rem;flex:1;max-width:1100px;margin:0 auto;width:100%}
+.section{display:none}.section.active{display:block}
+
+/* METRIC CARDS */
+.cards-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:1.25rem}
+.mc{background:white;border:1px solid var(--gray-200);border-radius:var(--r);padding:14px 16px}
+.mc-label{font-size:11px;color:var(--gray-400);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.mc-val{font-size:20px;font-weight:600;color:var(--gray-900);font-family:var(--mono)}
+.mc-comprados{background:var(--green-light);border-color:#9FE1CB}
+.mc-comprados .mc-label{color:var(--green)}
+.mc-comprados .mc-val{color:var(--green)}
+
+/* TOOLBAR */
+.toolbar{display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap}
+.search-input{flex:1;min-width:160px;padding:8px 12px;border:1px solid var(--gray-200);border-radius:var(--r);font-size:13px;font-family:var(--font);background:white;color:var(--gray-900)}
+.search-input:focus{outline:none;border-color:var(--red)}
+.btn{padding:7px 14px;border-radius:var(--r);font-size:13px;cursor:pointer;font-family:var(--font);border:1px solid var(--gray-200);background:white;color:var(--gray-900);transition:all .12s}
+.btn:hover{background:var(--gray-100)}
+.btn-primary{background:var(--red);color:white;border-color:var(--red)}
+.btn-primary:hover{background:#a80d26}
+.filter-pills{display:flex;gap:6px;flex-wrap:wrap}
+.fp{padding:4px 12px;border-radius:20px;font-size:12px;border:1px solid var(--gray-200);background:white;cursor:pointer;color:var(--gray-600);font-family:var(--font)}
+.fp.active{background:var(--gray-900);color:white;border-color:var(--gray-900)}
+.fp-comprado.active{background:var(--green);border-color:var(--green)}
+.fp-pendiente.active{background:var(--amber);color:white;border-color:var(--amber)}
+
+/* TABLE */
+.table-wrap{background:white;border:1px solid var(--gray-200);border-radius:var(--rl);overflow:hidden;margin-bottom:1rem}
+table{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed}
+thead th{padding:9px 12px;background:var(--gray-50);color:var(--gray-400);font-weight:500;font-size:11px;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--gray-200);text-align:left}
+tbody td{padding:8px 12px;border-bottom:1px solid var(--gray-100);color:var(--gray-900);vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:var(--gray-50)}
+tbody tr.row-comprado td{background:#f0faf4}
+tbody tr.row-comprado:hover td{background:#e4f5ea}
+.ci{width:100%;padding:4px 7px;border:1px solid transparent;border-radius:6px;font-size:13px;font-family:var(--font);background:transparent;color:var(--gray-900)}
+.ci:hover{border-color:var(--gray-200);background:white}
+.ci:focus{outline:none;border-color:var(--red);background:white}
+.ci-num{width:62px;text-align:right;font-family:var(--mono)}
+.ci-price{width:86px;text-align:right;font-family:var(--mono)}
+.subtotal{font-family:var(--mono);font-size:12px;color:var(--gray-600);text-align:right}
+.del-btn{padding:3px 7px;background:transparent;border:none;cursor:pointer;color:var(--gray-400);border-radius:4px;font-size:13px}
+.del-btn:hover{color:var(--red);background:var(--red-light)}
+.cat-sel{padding:3px 5px;border:1px solid transparent;border-radius:6px;font-size:11px;font-family:var(--font);background:transparent;cursor:pointer;color:var(--gray-600)}
+.cat-sel:hover{border-color:var(--gray-200);background:white}
+.cat-sel:focus{outline:none;border-color:var(--red)}
+
+/* COMPRADO CHECKBOX */
+.check-wrap{display:flex;justify-content:center;align-items:center}
+.cbuy{width:18px;height:18px;border-radius:5px;border:1.5px solid var(--gray-300);appearance:none;cursor:pointer;transition:all .15s;background:white}
+.cbuy:checked{background:var(--green);border-color:var(--green)}
+.cbuy:checked::after{content:'✓';color:white;font-size:11px;display:flex;align-items:center;justify-content:center;line-height:16px}
+.badge-comp{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:500;background:var(--green-light);color:var(--green)}
+.badge-pend{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:500;background:#fffbeb;color:var(--amber)}
+
+/* ADD ROW */
+.add-section{background:var(--gray-50);border:1px solid var(--gray-200);border-radius:var(--r);padding:12px;margin-top:8px}
+.add-grid{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.ai{padding:6px 10px;border:1px solid var(--gray-200);border-radius:var(--r);font-size:13px;font-family:var(--font);background:white;color:var(--gray-900)}
+.ai:focus{outline:none;border-color:var(--red)}
+
+/* EQUIPOS */
+.eq-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;margin-bottom:1rem}
+.eq-card{background:white;border:1px solid var(--gray-200);border-radius:var(--rl);padding:1.1rem 1.25rem;transition:border-color .15s}
+.eq-card.comprado{border-color:#9FE1CB;background:#f8fdf9}
+.eq-card-badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:500}
+.eb-moc{background:var(--green-light);color:var(--green)}
+.eb-nar{background:var(--blue-light);color:var(--blue)}
+.eb-amb{background:var(--amber-light);color:var(--amber)}
+.eq-price-input{width:108px;padding:5px 8px;border:1px solid var(--gray-200);border-radius:var(--r);font-size:14px;font-family:var(--mono);text-align:right;color:var(--gray-900);background:white}
+.eq-price-input:focus{outline:none;border-color:var(--red)}
+.eq-name-input{font-size:14px;font-weight:500;border:none;border-bottom:1px solid transparent;background:transparent;font-family:var(--font);width:100%;color:var(--gray-900);padding:2px 0}
+.eq-name-input:hover{border-bottom-color:var(--gray-200)}
+.eq-name-input:focus{outline:none;border-bottom-color:var(--red)}
+.eq-textarea{width:100%;font-size:12px;font-family:var(--font);color:var(--gray-600);border:1px solid transparent;border-radius:6px;resize:vertical;min-height:40px;padding:4px 6px;background:transparent}
+.eq-textarea:hover{border-color:var(--gray-200);background:var(--gray-50)}
+.eq-textarea:focus{outline:none;border-color:var(--red);background:white}
+.suc-pills{display:flex;gap:6px;margin-bottom:1rem;flex-wrap:wrap}
+.sp{padding:5px 14px;border-radius:20px;font-size:12px;border:1px solid var(--gray-200);background:white;cursor:pointer;color:var(--gray-600);font-family:var(--font)}
+.sp.active{background:var(--red);color:white;border-color:var(--red)}
+.btn-search{padding:5px 12px;background:var(--blue-light);color:var(--blue);border:1px solid #c5d5f7;border-radius:var(--r);font-size:12px;cursor:pointer;font-family:var(--font)}
+.btn-search:hover{background:#dce8f7}
+.btn-del-eq{padding:5px 10px;background:transparent;border:1px solid var(--gray-200);border-radius:var(--r);font-size:12px;cursor:pointer;color:var(--gray-400);font-family:var(--font)}
+.btn-del-eq:hover{color:var(--red);background:var(--red-light);border-color:var(--red-mid)}
+
+/* PRESUPUESTO */
+.budget-section{background:white;border:1px solid var(--gray-200);border-radius:var(--rl);padding:1.25rem;margin-bottom:1rem}
+.budget-title{font-size:13px;font-weight:600;color:var(--gray-900);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--gray-100)}
+.budget-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:13px;border-bottom:1px solid var(--gray-50)}
+.budget-row:last-child{border-bottom:none}
+.budget-row-name{color:var(--gray-600);display:flex;align-items:center;gap:6px}
+.budget-row-val{font-family:var(--mono);font-weight:500;color:var(--gray-900)}
+.budget-sub{display:flex;justify-content:space-between;padding:8px 12px;background:var(--gray-50);border-radius:var(--r);margin-top:8px}
+.total-bar{display:flex;justify-content:space-between;align-items:center;padding:1rem 1.25rem;background:var(--gray-900);border-radius:var(--rl);margin-bottom:1rem}
+.total-label{font-size:14px;color:#9ca3af}
+.total-val{font-size:28px;font-family:var(--mono);font-weight:600;color:white}
+.iva-toggle{display:flex;gap:6px;margin-bottom:1rem}
+.iva-btn{padding:5px 14px;border-radius:20px;font-size:12px;border:1px solid var(--gray-200);background:white;cursor:pointer;color:var(--gray-600);font-family:var(--font)}
+.iva-btn.active{background:var(--gray-900);color:white;border-color:var(--gray-900)}
+
+/* LOCKED */
+.locked-msg{background:var(--gray-100);border-radius:var(--rl);padding:3rem;text-align:center;margin-top:1rem}
+
+/* SAVING INDICATOR */
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner{display:inline-block;width:12px;height:12px;border:2px solid #fde68a;border-top-color:#7a4f00;border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:4px}
+
+@media(max-width:600px){.content{padding:1rem}.topbar{padding:0 1rem}.nav{padding:0 1rem}}
+
+.pin-btn{padding:14px;border-radius:var(--r);border:1px solid var(--gray-200);background:white;font-size:18px;font-weight:500;cursor:pointer;font-family:var(--mono);transition:all .1s;color:var(--gray-900)}
+.pin-btn:hover{background:var(--gray-100)}
+.pin-btn:active{background:var(--gray-200);transform:scale(0.95)}
+.pin-btn-clear{font-size:14px;color:var(--red)}
+.pin-btn-del{font-size:16px;color:var(--gray-600)}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-page" id="login-page">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="logo-circle">LF</div>
+      <div>
+        <div style="font-size:18px;font-weight:600">Lady Fresa</div>
+        <div style="font-size:12px;color:var(--gray-400)">Gestor de inventario</div>
+      </div>
+    </div>
+
+    <!-- user select screen -->
+    <div id="screen-users">
+      <div style="font-size:13px;color:var(--gray-600);margin-bottom:1rem">Selecciona tu usuario</div>
+      <button class="user-btn" onclick="selectUser('andres')">
+        <div class="uav av-admin">AN</div>
+        <div><div style="font-size:13px;font-weight:500">Andrés</div><div style="font-size:11px;color:var(--gray-400)">Administrador — requiere PIN</div></div>
+      </button>
+      <button class="user-btn" onclick="selectUser('joseluis')">
+        <div class="uav av-admin">JL</div>
+        <div><div style="font-size:13px;font-weight:500">José Luis</div><div style="font-size:11px;color:var(--gray-400)">Administrador — requiere PIN</div></div>
+      </button>
+      <button class="user-btn" onclick="login('hugo')">
+        <div class="uav av-user">HU</div>
+        <div><div style="font-size:13px;font-weight:500">Hugo</div><div style="font-size:11px;color:var(--gray-400)">Colaborador — acceso directo</div></div>
+      </button>
+    </div>
+
+    <!-- PIN screen -->
+    <div id="screen-pin" style="display:none">
+      <button onclick="backToUsers()" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--gray-400);margin-bottom:1.25rem;padding:0;display:flex;align-items:center;gap:4px">
+        ← Volver
+      </button>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:1.25rem">
+        <div class="uav av-admin" id="pin-avatar"></div>
+        <div>
+          <div style="font-size:14px;font-weight:500" id="pin-name"></div>
+          <div style="font-size:12px;color:var(--gray-400)">Ingresa tu PIN</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:center;margin-bottom:1rem" id="pin-dots">
+        <div style="width:14px;height:14px;border-radius:50%;border:2px solid var(--gray-300);background:white" id="dot-0"></div>
+        <div style="width:14px;height:14px;border-radius:50%;border:2px solid var(--gray-300);background:white" id="dot-1"></div>
+        <div style="width:14px;height:14px;border-radius:50%;border:2px solid var(--gray-300);background:white" id="dot-2"></div>
+        <div style="width:14px;height:14px;border-radius:50%;border:2px solid var(--gray-300);background:white" id="dot-3"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:220px;margin:0 auto">
+        <button class="pin-btn" onclick="pinPress('1')">1</button>
+        <button class="pin-btn" onclick="pinPress('2')">2</button>
+        <button class="pin-btn" onclick="pinPress('3')">3</button>
+        <button class="pin-btn" onclick="pinPress('4')">4</button>
+        <button class="pin-btn" onclick="pinPress('5')">5</button>
+        <button class="pin-btn" onclick="pinPress('6')">6</button>
+        <button class="pin-btn" onclick="pinPress('7')">7</button>
+        <button class="pin-btn" onclick="pinPress('8')">8</button>
+        <button class="pin-btn" onclick="pinPress('9')">9</button>
+        <button class="pin-btn pin-btn-clear" onclick="pinClear()">✕</button>
+        <button class="pin-btn" onclick="pinPress('0')">0</button>
+        <button class="pin-btn pin-btn-del" onclick="pinDel()">⌫</button>
+      </div>
+      <div id="pin-error" style="text-align:center;font-size:12px;color:var(--red);margin-top:12px;min-height:18px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div class="app" id="app">
+  <div class="topbar">
+    <div style="display:flex;align-items:center">
+      <div class="topbar-logo">LF</div>
+      <span style="font-size:14px;font-weight:600">Lady Fresa</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <span class="sav" id="sav-indicator"><span class="spinner"></span>Guardando…</span>
+      <span class="sync sync-load" id="sync-status">Conectando…</span>
+      <div class="uav small-av" id="top-av"></div>
+      <span id="top-name" style="font-size:13px;color:var(--gray-600)"></span>
+      <button class="btn-logout" onclick="logout()">Salir</button>
+    </div>
+  </div>
+
+  <div class="nav">
+    <button class="nav-tab active" onclick="showTab('utensilios',this)">Utensilios</button>
+    <button class="nav-tab" onclick="showTab('insumos',this)">Insumos</button>
+    <button class="nav-tab" id="nav-eq" onclick="showTab('equipos',this)">Equipos</button>
+    <button class="nav-tab" id="nav-pres" onclick="showTab('presupuesto',this)">Presupuesto</button>
+  </div>
+
+  <div class="content">
+
+    <!-- UTENSILIOS -->
+    <div class="section active" id="sec-utensilios">
+      <div class="cards-row">
+        <div class="mc"><div class="mc-label">Artículos</div><div class="mc-val" id="ut-count">—</div></div>
+        <div class="mc"><div class="mc-label">Cant. total</div><div class="mc-val" id="ut-qty">—</div></div>
+        <div class="mc"><div class="mc-label">Subtotal</div><div class="mc-val" id="ut-total">—</div></div>
+        <div class="mc mc-comprados"><div class="mc-label">Comprados</div><div class="mc-val" id="ut-comp">—</div></div>
+      </div>
+      <div class="toolbar">
+        <input class="search-input" type="text" placeholder="Buscar…" oninput="filterTable('ut',this.value)">
+        <div class="filter-pills">
+          <button class="fp active" onclick="setFilter('ut','all',this)">Todos</button>
+          <button class="fp fp-comprado" onclick="setFilter('ut','comprado',this)">Comprados</button>
+          <button class="fp fp-pendiente" onclick="setFilter('ut','pendiente',this)">Pendientes</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <colgroup><col style="width:3%"><col style="width:31%"><col style="width:11%"><col style="width:7%"><col style="width:9%"><col style="width:10%"><col style="width:16%"><col style="width:6%"></colgroup>
+          <thead><tr><th>✓</th><th>Artículo</th><th>Categoría</th><th>Cant.</th><th>Precio</th><th>Subtotal</th><th>Proveedor</th><th></th></tr></thead>
+          <tbody id="tbody-ut"></tbody>
+        </table>
+      </div>
+      <div class="add-section">
+        <div class="add-grid">
+          <input class="ai" id="new-ut-name" placeholder="Nombre del artículo" style="flex:2;min-width:130px">
+          <select class="ai" id="new-ut-cat">
+            <option value="cocina">cocina</option><option value="equipo">equipo</option>
+            <option value="limpieza">limpieza</option><option value="mueble">mueble</option><option value="otro">otro</option>
+          </select>
+          <input class="ai ci-num" id="new-ut-qty" type="number" placeholder="Cant" min="0" style="width:70px">
+          <button class="btn btn-primary" onclick="addRow('ut')">+ Agregar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- INSUMOS -->
+    <div class="section" id="sec-insumos">
+      <div class="cards-row">
+        <div class="mc"><div class="mc-label">Insumos</div><div class="mc-val" id="ins-count">—</div></div>
+        <div class="mc"><div class="mc-label">Subtotal</div><div class="mc-val" id="ins-total">—</div></div>
+        <div class="mc mc-comprados"><div class="mc-label">Comprados</div><div class="mc-val" id="ins-comp">—</div></div>
+      </div>
+      <div class="toolbar">
+        <input class="search-input" type="text" placeholder="Buscar…" oninput="filterTable('ins',this.value)">
+        <div class="filter-pills">
+          <button class="fp active" onclick="setFilter('ins','all',this)">Todos</button>
+          <button class="fp fp-comprado" onclick="setFilter('ins','comprado',this)">Comprados</button>
+          <button class="fp fp-pendiente" onclick="setFilter('ins','pendiente',this)">Pendientes</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <colgroup><col style="width:3%"><col style="width:31%"><col style="width:11%"><col style="width:7%"><col style="width:9%"><col style="width:10%"><col style="width:16%"><col style="width:6%"></col></colgroup>
+          <thead><tr><th>✓</th><th>Insumo</th><th>Categoría</th><th>Cant.</th><th>Precio</th><th>Subtotal</th><th>Proveedor</th><th></th></tr></thead>
+          <tbody id="tbody-ins"></tbody>
+        </table>
+      </div>
+      <div class="add-section">
+        <div class="add-grid">
+          <input class="ai" id="new-ins-name" placeholder="Nombre del insumo" style="flex:2;min-width:130px">
+          <select class="ai" id="new-ins-cat">
+            <option value="base">base</option><option value="chocolate">chocolate</option>
+            <option value="dulce">dulce</option><option value="galleta">galleta</option>
+            <option value="salsa">salsa</option><option value="crumble">crumble</option>
+            <option value="bebida">bebida</option><option value="desechable">desechable</option>
+            <option value="limpieza">limpieza</option><option value="papeleria">papelería</option>
+            <option value="publicidad">publicidad</option>
+          </select>
+          <input class="ai ci-num" id="new-ins-qty" type="number" placeholder="Cant" min="0" style="width:70px">
+          <button class="btn btn-primary" onclick="addRow('ins')">+ Agregar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- EQUIPOS -->
+    <div class="section" id="sec-equipos">
+      <div id="eq-locked" class="locked-msg" style="display:none">
+        <div style="font-size:2rem;margin-bottom:12px">🔒</div>
+        <div style="font-size:15px;font-weight:600;margin-bottom:6px">Acceso restringido</div>
+        <div style="font-size:13px;color:var(--gray-400)">Solo para Andrés y José Luis.</div>
+      </div>
+      <div id="eq-content">
+        <div class="cards-row">
+          <div class="mc"><div class="mc-label">Moctezuma</div><div class="mc-val" id="eq-moc">—</div></div>
+          <div class="mc"><div class="mc-label">Narvarte</div><div class="mc-val" id="eq-nar">—</div></div>
+          <div class="mc"><div class="mc-label">Ambos</div><div class="mc-val" id="eq-amb">—</div></div>
+          <div class="mc mc-comprados"><div class="mc-label">Comprados</div><div class="mc-val" id="eq-comp">—</div></div>
+        </div>
+        <div class="toolbar">
+          <div class="suc-pills">
+            <button class="sp active" onclick="filterEq('all',this)">Todos</button>
+            <button class="sp" onclick="filterEq('moctezuma',this)">Moctezuma</button>
+            <button class="sp" onclick="filterEq('narvarte',this)">Narvarte</button>
+            <button class="sp" onclick="filterEq('ambos',this)">Ambos</button>
+          </div>
+          <div class="filter-pills" style="margin-left:auto">
+            <button class="fp active" onclick="setEqFilter('all',this)">Todos</button>
+            <button class="fp fp-comprado" onclick="setEqFilter('comprado',this)">Comprados</button>
+            <button class="fp fp-pendiente" onclick="setEqFilter('pendiente',this)">Pendientes</button>
+          </div>
+        </div>
+        <div class="eq-grid" id="eq-grid"></div>
+        <div class="add-section">
+          <div class="add-grid">
+            <input class="ai" id="new-eq-name" placeholder="Nombre del equipo" style="flex:2;min-width:130px">
+            <select class="ai" id="new-eq-suc">
+              <option value="moctezuma">Moctezuma</option>
+              <option value="narvarte">Narvarte</option>
+              <option value="ambos">Ambos</option>
+            </select>
+            <input class="ai ci-price" id="new-eq-price" type="number" placeholder="Precio" style="width:100px">
+            <label style="display:flex;align-items:center;gap:5px;font-size:13px;color:var(--gray-600);cursor:pointer">
+              <input type="checkbox" id="new-eq-iva"> +IVA
+            </label>
+            <button class="btn btn-primary" onclick="addEquipo()">+ Agregar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PRESUPUESTO -->
+    <div class="section" id="sec-presupuesto">
+      <div id="pres-locked" class="locked-msg" style="display:none">
+        <div style="font-size:2rem;margin-bottom:12px">🔒</div>
+        <div style="font-size:15px;font-weight:600;margin-bottom:6px">Acceso restringido</div>
+        <div style="font-size:13px;color:var(--gray-400)">Solo para Andrés y José Luis.</div>
+      </div>
+      <div id="pres-content">
+        <div class="iva-toggle">
+          <button class="iva-btn active" onclick="setIva(false,this)">Sin IVA</button>
+          <button class="iva-btn" onclick="setIva(true,this)">Con IVA (16%)</button>
+        </div>
+        <div class="budget-section">
+          <div class="budget-title">Moctezuma — equipos</div>
+          <div id="pres-moc-detail"></div>
+          <div class="budget-sub"><span style="font-size:13px;color:var(--gray-600)">Subtotal Moctezuma</span><span style="font-family:var(--mono);font-weight:600" id="pres-moc-sub">$0</span></div>
+        </div>
+        <div class="budget-section">
+          <div class="budget-title">Narvarte — equipos</div>
+          <div id="pres-nar-detail"></div>
+          <div class="budget-sub"><span style="font-size:13px;color:var(--gray-600)">Subtotal Narvarte</span><span style="font-family:var(--mono);font-weight:600" id="pres-nar-sub">$0</span></div>
+        </div>
+        <div class="budget-section">
+          <div class="budget-title">Ambos locales</div>
+          <div id="pres-amb-detail"></div>
+          <div class="budget-sub"><span style="font-size:13px;color:var(--gray-600)">Subtotal ambos</span><span style="font-family:var(--mono);font-weight:600" id="pres-amb-sub">$0</span></div>
+        </div>
+        <div class="budget-section">
+          <div class="budget-title">Otros conceptos</div>
+          <div class="budget-row"><span class="budget-row-name">Utensilios</span><span class="budget-row-val" id="pres-ut-val">$0</span></div>
+          <div class="budget-row"><span class="budget-row-name">Insumos</span><span class="budget-row-val" id="pres-ins-val">$0</span></div>
+        </div>
+        <div class="total-bar">
+          <div class="total-label">Total general estimado</div>
+          <div class="total-val" id="pres-total">$0</div>
+        </div>
+        <div class="budget-section">
+          <div class="budget-title">Progreso de compras</div>
+          <div id="pres-progress"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const SUPA_URL = 'https://tnspshptvqvhhwwckzcc.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRuc3BzaHB0dnF2aGh3d2NremNjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIyOTE4MzYsImV4cCI6MjA4Nzg2NzgzNn0.VYO6LMiRfv9pTCO-jRrz4ph2S_uKgX-kqYRCyVKCwdU';
+const { createClient } = supabase;
+const sb = createClient(SUPA_URL, SUPA_KEY);
+
+const USERS = {
+  andres:  {name:'Andrés',   initials:'AN', role:'admin', av:'av-admin'},
+  joseluis:{name:'José Luis',initials:'JL', role:'admin', av:'av-admin'},
+  hugo:    {name:'Hugo',     initials:'HU', role:'user',  av:'av-user'}
+};
+let currentUser = null;
+let showIva = false;
+let eqSucFilter = 'all';
+let eqCompFilter = 'all';
+let utFilter = {text:'', status:'all'};
+let insFilter = {text:'', status:'all'};
+
+let utData = [], insData = [], eqData = [];
+
+const fmt = n => '$' + Math.round(n).toLocaleString('es-MX');
+const eqP  = e => (showIva && e.iva) ? Math.round((e.precio||0)*1.16) : (e.precio||0);
+
+const CATS_UT  = ['cocina','equipo','limpieza','desechable','mueble','otro'];
+const CATS_INS = ['base','chocolate','dulce','galleta','salsa','crumble','bebida','desechable','limpieza','papeleria','publicidad'];
+
+let saveTimer = null;
+function markSaving(){
+  document.getElementById('sav-indicator').classList.add('vis');
+}
+function markSaved(){
+  document.getElementById('sav-indicator').classList.remove('vis');
+}
+
+function setSyncStatus(state, msg){
+  const el = document.getElementById('sync-status');
+  el.className = 'sync ' + state;
+  el.textContent = msg;
+}
+
+// ── LOAD ────────────────────────────────────────────────
+async function loadAll(){
+  setSyncStatus('sync-load','Cargando…');
+  try {
+    const [r1,r2,r3] = await Promise.all([
+      sb.from('gestor_utensilios').select('*').order('created_at'),
+      sb.from('gestor_insumos').select('*').order('created_at'),
+      sb.from('gestor_equipos').select('*').order('created_at'),
+    ]);
+    if(r1.error||r2.error||r3.error) throw new Error('fetch failed');
+    utData  = r1.data;
+    insData = r2.data;
+    eqData  = r3.data;
+    setSyncStatus('sync-ok','Sincronizado');
+  } catch(e) {
+    setSyncStatus('sync-err','Error de conexión');
+    console.error(e);
+  }
+  renderAll();
+}
+
+// ── UPSERT helpers ──────────────────────────────────────
+async function upsertRow(table, row){
+  markSaving();
+  const {id, ...fields} = row;
+  const {error} = await sb.from(table).update(fields).eq('id', id);
+  if(error) console.error('upsertRow error:', table, error);
+  markSaved();
+}
+async function deleteRow(table, id){
+  markSaving();
+  const {error} = await sb.from(table).delete().eq('id',id);
+  if(error) console.error(error);
+  markSaved();
+}
+
+// ── RENDER ───────────────────────────────────────────────
+function renderAll(){ buildTable('ut'); buildTable('ins'); buildEquipos(); updateSummary(); }
+
+function catOptions(cats, sel){
+  return cats.map(c=>`<option value="${c}"${c===sel?' selected':''}>${c}</option>`).join('');
+}
+
+function buildTable(type){
+  const data = type==='ut'?utData:insData;
+  const cats = type==='ut'?CATS_UT:CATS_INS;
+  const f = type==='ut'?utFilter:insFilter;
+  const tbody = document.getElementById('tbody-'+type);
+  tbody.innerHTML='';
+
+  const visible = data.filter(d=>{
+    const matchText = (d.nombre||'').toLowerCase().includes(f.text.toLowerCase());
+    const matchStatus = f.status==='all' || (f.status==='comprado'&&d.comprado) || (f.status==='pendiente'&&!d.comprado);
+    return matchText && matchStatus;
+  });
+
+  visible.forEach(d=>{
+    const sub=(d.cantidad||0)*(d.precio||0);
+    const tr=document.createElement('tr');
+    tr.className = d.comprado ? 'row-comprado' : '';
+    tr.dataset.id = d.id;
+    tr.innerHTML=`
+      <td class="check-wrap"><input type="checkbox" class="cbuy" ${d.comprado?'checked':''} onchange="toggleComprado('${type}','${d.id}',this.checked)"></td>
+      <td><input class="ci" value="${(d.nombre||'').replace(/"/g,'&quot;')}" onchange="updateField('${type}','${d.id}','nombre',this.value)"></td>
+      <td><select class="cat-sel" onchange="updateField('${type}','${d.id}','categoria',this.value)">${catOptions(cats,d.categoria)}</select></td>
+      <td><input class="ci ci-num" type="number" value="${d.cantidad||0}" min="0" onchange="updateField('${type}','${d.id}','cantidad',+this.value)"></td>
+      <td><input class="ci ci-price" type="number" value="${d.precio||''}" placeholder="0" min="0" onchange="updateField('${type}','${d.id}','precio',+this.value)"></td>
+      <td class="subtotal">${sub>0?fmt(sub):'—'}</td>
+      <td><input class="ci" value="${(d.proveedor||'').replace(/"/g,'&quot;')}" placeholder="—" onchange="updateField('${type}','${d.id}','proveedor',this.value)"></td>
+      <td><button class="del-btn" onclick="deleteItem('${type}','${d.id}')">✕</button></td>`;
+    tbody.appendChild(tr);
+  });
+
+  // metrics
+  const total = data.reduce((a,d)=>a+(d.cantidad||0)*(d.precio||0),0);
+  const comp = data.filter(d=>d.comprado).length;
+  if(type==='ut'){
+    document.getElementById('ut-count').textContent = data.length;
+    document.getElementById('ut-qty').textContent = data.reduce((a,d)=>a+(d.cantidad||0),0);
+    document.getElementById('ut-total').textContent = fmt(total);
+    document.getElementById('ut-comp').textContent = `${comp}/${data.length}`;
+  } else {
+    document.getElementById('ins-count').textContent = data.length;
+    document.getElementById('ins-total').textContent = fmt(total);
+    document.getElementById('ins-comp').textContent = `${comp}/${data.length}`;
+  }
+  updateSummary();
+}
+
+async function toggleComprado(type, id, val){
+  const table = type==='ut'?'gestor_utensilios':'gestor_insumos';
+  const arr = type==='ut'?utData:insData;
+  const item = arr.find(d=>d.id===id);
+  if(item){ item.comprado=val; }
+  await upsertRow(table, {id, comprado:val});
+  buildTable(type);
+}
+
+async function updateField(type, id, field, val){
+  const table = type==='ut'?'gestor_utensilios':'gestor_insumos';
+  const arr = type==='ut'?utData:insData;
+  const item = arr.find(d=>d.id===id);
+  if(item){ item[field]=val; }
+  markSaving();
+  clearTimeout(saveTimer);
+  const capturedVal = val;
+  saveTimer = setTimeout(async ()=>{
+    const {error} = await sb.from(table).update({[field]: capturedVal}).eq('id', id);
+    if(error) { console.error('updateField error:', error); setSyncStatus('sync-err','Error al guardar'); }
+    else { setSyncStatus('sync-ok','Guardado'); }
+    markSaved();
+    buildTable(type);
+  }, 800);
+}
+
+async function addRow(type){
+  const nameEl = document.getElementById('new-'+type+'-name');
+  const catEl  = document.getElementById('new-'+type+'-cat');
+  const qtyEl  = document.getElementById('new-'+type+'-qty');
+  const nm = nameEl.value.trim();
+  if(!nm) return;
+  const table = type==='ut'?'gestor_utensilios':'gestor_insumos';
+  const row = {nombre:nm, categoria:catEl.value, cantidad:+qtyEl.value||0, precio:0, proveedor:'', comprado:false};
+  markSaving();
+  const {data, error} = await sb.from(table).insert(row).select().single();
+  if(!error && data){
+    if(type==='ut') utData.push(data); else insData.push(data);
+  }
+  nameEl.value=''; qtyEl.value='';
+  markSaved();
+  buildTable(type);
+}
+
+async function deleteItem(type, id){
+  const table = type==='ut'?'gestor_utensilios':'gestor_insumos';
+  if(type==='ut') utData = utData.filter(d=>d.id!==id);
+  else insData = insData.filter(d=>d.id!==id);
+  await deleteRow(table, id);
+  buildTable(type);
+}
+
+function filterTable(type, q){
+  if(type==='ut') utFilter.text=q; else insFilter.text=q;
+  buildTable(type);
+}
+
+function setFilter(type, status, btn){
+  if(type==='ut') utFilter.status=status; else insFilter.status=status;
+  const parent = btn.closest('.filter-pills');
+  parent.querySelectorAll('.fp').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  buildTable(type);
+}
+
+// ── EQUIPOS ─────────────────────────────────────────────
+function buildEquipos(){
+  const grid = document.getElementById('eq-grid');
+  grid.innerHTML='';
+  const sucLabel={moctezuma:'Moctezuma',narvarte:'Narvarte',ambos:'Ambos locales'};
+  const sucClass={moctezuma:'eb-moc',narvarte:'eb-nar',ambos:'eb-amb'};
+
+  const shown = eqData.filter(e=>{
+    const matchSuc = eqSucFilter==='all' || e.sucursal===eqSucFilter;
+    const matchComp = eqCompFilter==='all' || (eqCompFilter==='comprado'&&e.comprado) || (eqCompFilter==='pendiente'&&!e.comprado);
+    return matchSuc && matchComp;
+  });
+
+  const pendientes = shown.filter(e=>!e.comprado);
+  const comprados  = shown.filter(e=>e.comprado);
+
+  const renderCard = (e) => {
+    const div=document.createElement('div');
+    div.className='eq-card'+(e.comprado?' comprado':'');
+    div.innerHTML=`
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+            ${e.comprado?`<span style="background:var(--green);color:white;font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;flex-shrink:0">✓ Comprado</span>`:''}
+            <input class="eq-name-input" style="${e.comprado?'text-decoration:none;color:var(--green)':''}" value="${(e.nombre||'').replace(/"/g,'&quot;')}" onchange="updateEqField('${e.id}','nombre',this.value)">
+          </div>
+          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:4px">
+            <span class="eq-card-badge ${sucClass[e.sucursal]}">${sucLabel[e.sucursal]}</span>
+            <select class="cat-sel" onchange="updateEqField('${e.id}','sucursal',this.value);buildEquipos();updateSummary()">
+              <option value="moctezuma"${e.sucursal==='moctezuma'?' selected':''}>Moctezuma</option>
+              <option value="narvarte"${e.sucursal==='narvarte'?' selected':''}>Narvarte</option>
+              <option value="ambos"${e.sucursal==='ambos'?' selected':''}>Ambos</option>
+            </select>
+            <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--gray-400);cursor:pointer">
+              <input type="checkbox" ${e.iva?'checked':''} onchange="updateEqField('${e.id}','iva',this.checked);buildEquipos();updateSummary()"> +IVA
+            </label>
+          </div>
+        </div>
+        <div style="text-align:right;min-width:110px">
+          <div style="font-size:11px;color:var(--gray-400);margin-bottom:2px">Precio MXN${e.iva?' (sin IVA)':''}</div>
+          <input class="eq-price-input" type="number" value="${e.precio||0}" onchange="updateEqField('${e.id}','precio',+this.value);buildEquipos();updateSummary()">
+          ${e.iva?`<div style="font-size:11px;color:var(--green);margin-top:2px">Con IVA: ${fmt(Math.round((e.precio||0)*1.16))}</div>`:''}
+        </div>
+      </div>
+      <div style="margin-top:8px">
+        <textarea class="eq-textarea" onchange="updateEqField('${e.id}','descripcion',this.value)">${e.descripcion||''}</textarea>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap">
+        <input class="ai" style="flex:1;min-width:80px;font-size:12px;padding:5px 8px" placeholder="Proveedor" value="${(e.proveedor||'').replace(/"/g,'&quot;')}" onchange="updateEqField('${e.id}','proveedor',this.value)">
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:5px 10px;border:1.5px solid ${e.comprado?'#1a6b3c':'var(--gray-200)'};border-radius:var(--r);background:${e.comprado?'var(--green-light)':'white'};color:${e.comprado?'var(--green)':'var(--gray-600)'}">
+          <input type="checkbox" ${e.comprado?'checked':''} onchange="toggleEqComprado('${e.id}',this.checked)">
+          ${e.comprado?'✓ Comprado':'Marcar como comprado'}
+        </label>
+        <button class="btn-search" onclick="window.open('https://www.mercadolibre.com.mx/s/${encodeURIComponent((e.nombre||''))}','_blank')">Buscar ↗</button>
+        <button class="btn-del-eq" onclick="deleteEquipo('${e.id}')">✕</button>
+      </div>`;
+    grid.appendChild(div);
+  };
+
+  // render pendientes first
+  pendientes.forEach(renderCard);
+
+  // separator + comprados section
+  if(comprados.length > 0 && (eqCompFilter==='all' || eqCompFilter==='comprado')) {
+    if(pendientes.length > 0 || eqCompFilter==='all') {
+      const sep = document.createElement('div');
+      sep.style.cssText = 'grid-column:1/-1;display:flex;align-items:center;gap:12px;margin:4px 0';
+      sep.innerHTML = `
+        <div style="flex:1;height:1px;background:var(--gray-200)"></div>
+        <span style="font-size:12px;font-weight:500;color:var(--green);background:var(--green-light);padding:3px 12px;border-radius:20px;white-space:nowrap">
+          ✓ Comprados (${comprados.length})
+        </span>
+        <div style="flex:1;height:1px;background:var(--gray-200)"></div>`;
+      grid.appendChild(sep);
+    }
+    comprados.forEach(renderCard);
+  }
+
+  // metrics
+  const moc=eqData.filter(e=>e.sucursal==='moctezuma').reduce((a,e)=>a+eqP(e),0);
+  const nar=eqData.filter(e=>e.sucursal==='narvarte').reduce((a,e)=>a+eqP(e),0);
+  const amb=eqData.filter(e=>e.sucursal==='ambos').reduce((a,e)=>a+eqP(e),0);
+  const comp=eqData.filter(e=>e.comprado).length;
+  document.getElementById('eq-moc').textContent=fmt(moc);
+  document.getElementById('eq-nar').textContent=fmt(nar);
+  document.getElementById('eq-amb').textContent=fmt(amb);
+  document.getElementById('eq-comp').textContent=`${comp}/${eqData.length}`;
+}
+
+async function updateEqField(id, field, val){
+  const item = eqData.find(e=>e.id===id);
+  if(item){ item[field]=val; }
+  markSaving();
+  clearTimeout(saveTimer);
+  const capturedVal = val;
+  saveTimer = setTimeout(async()=>{
+    const {error} = await sb.from('gestor_equipos').update({[field]: capturedVal}).eq('id', id);
+    if(error){ console.error('updateEqField error:', error); setSyncStatus('sync-err','Error al guardar'); }
+    else { setSyncStatus('sync-ok','Guardado'); }
+    markSaved();
+    buildEquipos(); updateSummary();
+  },800);
+}
+
+async function toggleEqComprado(id, val){
+  const item = eqData.find(e=>e.id===id);
+  if(item){ item.comprado=val; }
+  await upsertRow('gestor_equipos',{id, comprado:val});
+  buildEquipos(); updateSummary();
+}
+
+async function addEquipo(){
+  const n=document.getElementById('new-eq-name').value.trim();
+  if(!n) return;
+  const row={nombre:n, sucursal:document.getElementById('new-eq-suc').value, precio:+document.getElementById('new-eq-price').value||0, iva:document.getElementById('new-eq-iva').checked, descripcion:'', proveedor:'', comprado:false};
+  markSaving();
+  const {data,error}=await sb.from('gestor_equipos').insert(row).select().single();
+  if(!error&&data) eqData.push(data);
+  document.getElementById('new-eq-name').value='';
+  document.getElementById('new-eq-price').value='';
+  document.getElementById('new-eq-iva').checked=false;
+  markSaved();
+  buildEquipos(); updateSummary();
+}
+
+async function deleteEquipo(id){
+  eqData=eqData.filter(e=>e.id!==id);
+  await deleteRow('gestor_equipos',id);
+  buildEquipos(); updateSummary();
+}
+
+function filterEq(f,btn){
+  eqSucFilter=f;
+  document.querySelectorAll('.sp').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  buildEquipos();
+}
+
+function setEqFilter(f,btn){
+  eqCompFilter=f;
+  const parent=btn.closest('.filter-pills');
+  parent.querySelectorAll('.fp').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  buildEquipos();
+}
+
+// ── SUMMARY ─────────────────────────────────────────────
+function updateSummary(){
+  const utTotal=utData.reduce((a,d)=>a+(d.cantidad||0)*(d.precio||0),0);
+  const insTotal=insData.reduce((a,d)=>a+(d.cantidad||0)*(d.precio||0),0);
+  const mocEq=eqData.filter(e=>e.sucursal==='moctezuma');
+  const narEq=eqData.filter(e=>e.sucursal==='narvarte');
+  const ambEq=eqData.filter(e=>e.sucursal==='ambos');
+  const mocT=mocEq.reduce((a,e)=>a+eqP(e),0);
+  const narT=narEq.reduce((a,e)=>a+eqP(e),0);
+  const ambT=ambEq.reduce((a,e)=>a+eqP(e),0);
+
+  if(currentUser?.role==='admin'){
+    const rows=arr=>arr.map(e=>`<div class="budget-row">
+      <span class="budget-row-name">
+        ${e.comprado?'<span class="badge-comp">✓</span>':'<span class="badge-pend">·</span>'}
+        ${e.nombre}
+      </span>
+      <span class="budget-row-val">${fmt(eqP(e))}</span>
+    </div>`).join('');
+    document.getElementById('pres-moc-detail').innerHTML=rows(mocEq);
+    document.getElementById('pres-nar-detail').innerHTML=rows(narEq);
+    document.getElementById('pres-amb-detail').innerHTML=rows(ambEq);
+    document.getElementById('pres-moc-sub').textContent=fmt(mocT);
+    document.getElementById('pres-nar-sub').textContent=fmt(narT);
+    document.getElementById('pres-amb-sub').textContent=fmt(ambT);
+    document.getElementById('pres-ut-val').textContent=fmt(utTotal);
+    document.getElementById('pres-ins-val').textContent=fmt(insTotal);
+    document.getElementById('pres-total').textContent=fmt(mocT+narT+ambT+utTotal+insTotal);
+
+    // progress
+    const allItems=[...utData,...insData,...eqData];
+    const total=allItems.length, comp=allItems.filter(x=>x.comprado).length;
+    const pct=total>0?Math.round(comp/total*100):0;
+    document.getElementById('pres-progress').innerHTML=`
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px">
+        <span style="color:var(--gray-600)">${comp} de ${total} artículos comprados</span>
+        <span style="font-weight:600;color:var(--green)">${pct}%</span>
+      </div>
+      <div style="background:var(--gray-100);border-radius:20px;height:8px;overflow:hidden">
+        <div style="background:var(--green);height:100%;width:${pct}%;border-radius:20px;transition:width .4s"></div>
+      </div>`;
+  }
+}
+
+function setIva(val,btn){
+  showIva=val;
+  document.querySelectorAll('.iva-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  buildEquipos(); updateSummary();
+}
+
+// ── TABS ─────────────────────────────────────────────────
+function showTab(name,btn){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('sec-'+name).classList.add('active');
+  btn.classList.add('active');
+  if(name==='equipos') buildEquipos();
+  updateSummary();
+}
+
+// ── PIN AUTH ─────────────────────────────────────────────
+const PINS = { andres: '1221', joseluis: '5555' };
+let pendingUser = null;
+let pinEntry = '';
+
+function selectUser(uid) {
+  pendingUser = uid;
+  pinEntry = '';
+  updatePinDots();
+  document.getElementById('pin-avatar').textContent = USERS[uid].initials;
+  document.getElementById('pin-name').textContent = USERS[uid].name;
+  document.getElementById('pin-error').textContent = '';
+  document.getElementById('screen-users').style.display = 'none';
+  document.getElementById('screen-pin').style.display = 'block';
+}
+
+function backToUsers() {
+  pendingUser = null;
+  pinEntry = '';
+  document.getElementById('screen-pin').style.display = 'none';
+  document.getElementById('screen-users').style.display = 'block';
+}
+
+function pinPress(digit) {
+  if (pinEntry.length >= 4) return;
+  pinEntry += digit;
+  updatePinDots();
+  if (pinEntry.length === 4) {
+    setTimeout(checkPin, 120);
+  }
+}
+
+function pinDel() {
+  pinEntry = pinEntry.slice(0, -1);
+  updatePinDots();
+  document.getElementById('pin-error').textContent = '';
+}
+
+function pinClear() {
+  pinEntry = '';
+  updatePinDots();
+  document.getElementById('pin-error').textContent = '';
+}
+
+function updatePinDots() {
+  for (let i = 0; i < 4; i++) {
+    const dot = document.getElementById('dot-' + i);
+    dot.style.background = i < pinEntry.length ? 'var(--red)' : 'white';
+    dot.style.borderColor = i < pinEntry.length ? 'var(--red)' : 'var(--gray-300)';
+  }
+}
+
+function checkPin() {
+  if (pinEntry === PINS[pendingUser]) {
+    login(pendingUser);
+  } else {
+    document.getElementById('pin-error').textContent = 'PIN incorrecto, intenta de nuevo';
+    pinEntry = '';
+    updatePinDots();
+    // shake animation
+    const card = document.querySelector('.login-card');
+    card.style.transform = 'translateX(-6px)';
+    setTimeout(() => card.style.transform = 'translateX(6px)', 80);
+    setTimeout(() => card.style.transform = 'translateX(-4px)', 160);
+    setTimeout(() => card.style.transform = 'translateX(0)', 240);
+  }
+}
+
+// ── AUTH ─────────────────────────────────────────────────
+async function login(uid){
+  currentUser=USERS[uid];
+  document.getElementById('login-page').style.display='none';
+  document.getElementById('app').style.display='flex';
+  const av=document.getElementById('top-av');
+  av.textContent=currentUser.initials;
+  av.className='uav small-av '+currentUser.av;
+  document.getElementById('top-name').textContent=currentUser.name;
+  const isAdmin=currentUser.role==='admin';
+  document.getElementById('eq-locked').style.display=isAdmin?'none':'block';
+  document.getElementById('eq-content').style.display=isAdmin?'block':'none';
+  document.getElementById('pres-locked').style.display=isAdmin?'none':'block';
+  document.getElementById('pres-content').style.display=isAdmin?'block':'none';
+  await loadAll();
+}
+
+function logout(){
+  currentUser=null;
+  document.getElementById('login-page').style.display='flex';
+  document.getElementById('app').style.display='none';
+}
+</script>
+</body>
+</html>
