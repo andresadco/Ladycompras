@@ -160,7 +160,65 @@ tbody tr.row-comprado:hover td{background:#e4f5ea}
 @keyframes spin{to{transform:rotate(360deg)}}
 .spinner{display:inline-block;width:12px;height:12px;border:2px solid #fde68a;border-top-color:#7a4f00;border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:4px}
 
-@media(max-width:600px){.content{padding:1rem}.topbar{padding:0 1rem}.nav{padding:0 1rem}}
+/* MOBILE CARD LIST (hidden on desktop, shown on mobile) */
+.mobile-list{display:none;margin-bottom:1rem}
+.m-card{background:white;border:1px solid var(--gray-200);border-radius:var(--rl);padding:14px;margin-bottom:10px}
+.m-card.comprado{background:#f0faf4;border-color:#9FE1CB}
+.m-card-header{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:12px}
+.m-card-name{font-size:15px;font-weight:500;color:var(--gray-900);flex:1;border:none;border-bottom:2px solid transparent;background:transparent;font-family:var(--font);padding:2px 0;line-height:1.4;width:100%}
+.m-card-name:focus{outline:none;border-bottom-color:var(--red)}
+.m-card-actions{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.m-card-del{background:transparent;border:none;cursor:pointer;color:var(--gray-400);font-size:18px;padding:2px 4px;line-height:1}
+.m-card-del:active{color:var(--red)}
+.m-card-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.m-card-field{display:flex;flex-direction:column;gap:4px}
+.m-card-field.full{grid-column:1/-1}
+.m-card-label{font-size:11px;font-weight:500;color:var(--gray-400);text-transform:uppercase;letter-spacing:.5px}
+.m-card-input{border:1px solid var(--gray-200);border-radius:var(--r);padding:8px 10px;font-size:14px;font-family:var(--mono);background:white;color:var(--gray-900);width:100%;-webkit-appearance:none}
+.m-card-input:focus{outline:none;border-color:var(--red)}
+.m-card-input.text{font-family:var(--font)}
+.m-card-footer{display:flex;align-items:center;justify-content:space-between;padding-top:10px;border-top:1px solid var(--gray-100)}
+.m-card-sub{font-size:13px;font-family:var(--mono);font-weight:600;color:var(--green)}
+.m-card-buy{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:500;padding:6px 12px;border-radius:20px;border:1.5px solid var(--gray-200);background:white;color:var(--gray-600);font-family:var(--font)}
+.m-card-buy.checked{border-color:var(--green);background:var(--green-light);color:var(--green)}
+.m-card-buy input{width:16px;height:16px;accent-color:var(--green);cursor:pointer}
+
+@media(max-width:600px){
+  .content{padding:.75rem}
+  .topbar{padding:0 .75rem;height:48px}
+  .topbar-logo{width:26px;height:26px;font-size:10px;margin-right:8px}
+  .topbar span[id="top-name"]{display:none}
+  .sync{font-size:10px;padding:2px 7px}
+  .sav{font-size:10px;padding:2px 7px}
+  .nav{padding:0 .75rem}
+  .nav-tab{padding:10px 12px;font-size:12px}
+  .login-card{width:calc(100vw - 2rem);padding:1.5rem}
+  .cards-row{grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:1rem}
+  .mc{padding:10px 12px}
+  .mc-val{font-size:16px}
+
+  /* HIDE TABLE, SHOW CARDS ON MOBILE */
+  .table-wrap{display:none}
+  .mobile-list{display:block}
+
+  .toolbar{gap:6px}
+  .search-input{min-width:0;font-size:14px}
+  .filter-pills{gap:4px}
+  .fp{padding:4px 10px;font-size:11px}
+
+  .eq-grid{grid-template-columns:1fr}
+  .suc-pills{gap:4px}
+  .sp{padding:4px 10px;font-size:11px}
+
+  .add-section{padding:10px}
+  .add-grid{gap:6px}
+  .add-grid input,.add-grid select{font-size:14px}
+
+  .budget-section{padding:1rem}
+  .total-val{font-size:22px}
+
+  .pin-btn{padding:16px;font-size:20px}
+}
 
 .pin-btn{padding:14px;border-radius:var(--r);border:1px solid var(--gray-200);background:white;font-size:18px;font-weight:500;cursor:pointer;font-family:var(--mono);transition:all .1s;color:var(--gray-900)}
 .pin-btn:hover{background:var(--gray-100)}
@@ -284,6 +342,7 @@ tbody tr.row-comprado:hover td{background:#e4f5ea}
           <tbody id="tbody-ut"></tbody>
         </table>
       </div>
+      <div class="mobile-list" id="mlist-ut"></div>
       <div class="add-section">
         <div class="add-grid">
           <input class="ai" id="new-ut-name" placeholder="Nombre del artículo" style="flex:2;min-width:130px">
@@ -319,6 +378,7 @@ tbody tr.row-comprado:hover td{background:#e4f5ea}
           <tbody id="tbody-ins"></tbody>
         </table>
       </div>
+      <div class="mobile-list" id="mlist-ins"></div>
       <div class="add-section">
         <div class="add-grid">
           <input class="ai" id="new-ins-name" placeholder="Nombre del insumo" style="flex:2;min-width:130px">
@@ -516,7 +576,9 @@ function buildTable(type){
   const cats = type==='ut'?CATS_UT:CATS_INS;
   const f = type==='ut'?utFilter:insFilter;
   const tbody = document.getElementById('tbody-'+type);
+  const mlist = document.getElementById('mlist-'+type);
   tbody.innerHTML='';
+  mlist.innerHTML='';
 
   const visible = data.filter(d=>{
     const matchText = (d.nombre||'').toLowerCase().includes(f.text.toLowerCase());
@@ -526,6 +588,8 @@ function buildTable(type){
 
   visible.forEach(d=>{
     const sub=(d.cantidad||0)*(d.precio||0);
+
+    // ── DESKTOP TABLE ROW ──
     const tr=document.createElement('tr');
     tr.className = d.comprado ? 'row-comprado' : '';
     tr.dataset.id = d.id;
@@ -539,6 +603,41 @@ function buildTable(type){
       <td><input class="ci" value="${(d.proveedor||'').replace(/"/g,'&quot;')}" placeholder="—" onchange="updateField('${type}','${d.id}','proveedor',this.value)"></td>
       <td><button class="del-btn" onclick="deleteItem('${type}','${d.id}')">✕</button></td>`;
     tbody.appendChild(tr);
+
+    // ── MOBILE CARD ──
+    const mc=document.createElement('div');
+    mc.className='m-card'+(d.comprado?' comprado':'');
+    mc.innerHTML=`
+      <div class="m-card-header">
+        <input class="m-card-name" value="${(d.nombre||'').replace(/"/g,'&quot;')}" onchange="updateField('${type}','${d.id}','nombre',this.value)">
+        <button class="m-card-del" onclick="deleteItem('${type}','${d.id}')">✕</button>
+      </div>
+      <div class="m-card-grid">
+        <div class="m-card-field">
+          <span class="m-card-label">Cantidad</span>
+          <input class="m-card-input" type="number" inputmode="numeric" value="${d.cantidad||0}" min="0" onchange="updateField('${type}','${d.id}','cantidad',+this.value)">
+        </div>
+        <div class="m-card-field">
+          <span class="m-card-label">Precio $</span>
+          <input class="m-card-input" type="number" inputmode="decimal" value="${d.precio||''}" placeholder="0.00" onchange="updateField('${type}','${d.id}','precio',+this.value)">
+        </div>
+        <div class="m-card-field">
+          <span class="m-card-label">Categoría</span>
+          <select class="m-card-input text" onchange="updateField('${type}','${d.id}','categoria',this.value)">${catOptions(cats,d.categoria)}</select>
+        </div>
+        <div class="m-card-field">
+          <span class="m-card-label">Proveedor</span>
+          <input class="m-card-input text" value="${(d.proveedor||'').replace(/"/g,'&quot;')}" placeholder="—" onchange="updateField('${type}','${d.id}','proveedor',this.value)">
+        </div>
+      </div>
+      <div class="m-card-footer">
+        <span class="m-card-sub">${sub>0?fmt(sub):''}</span>
+        <label class="m-card-buy ${d.comprado?'checked':''}">
+          <input type="checkbox" ${d.comprado?'checked':''} onchange="toggleComprado('${type}','${d.id}',this.checked);this.closest('.m-card-buy').classList.toggle('checked',this.checked);this.closest('.m-card').classList.toggle('comprado',this.checked)">
+          ${d.comprado?'✓ Comprado':'Marcar comprado'}
+        </label>
+      </div>`;
+    mlist.appendChild(mc);
   });
 
   // metrics
