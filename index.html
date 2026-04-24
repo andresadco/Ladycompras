@@ -603,6 +603,7 @@ tbody tr.row-comprado:hover td{background:#e4f5ea}
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn" onclick="copiarListaDirecto(this)" style="display:flex;align-items:center;gap:6px">📋 Copiar para WhatsApp</button>
+          <button class="btn" id="btn-crear-pedido" onclick="mostrarFormPedidoDesdeLista()" style="display:none;display:flex;align-items:center;gap:6px;border-color:#AFA9EC;color:#3C3489;background:#EEEDFE">📋 Crear pedido con estos artículos</button>
           <button class="btn btn-primary" onclick="buildLista()">↺ Actualizar</button>
         </div>
       </div>
@@ -653,6 +654,37 @@ tbody tr.row-comprado:hover td{background:#e4f5ea}
           </div>
         </div>
       </div>
+      <div id="form-pedido-lista" style="display:none;background:#EEEDFE;border:1px solid #AFA9EC;border-radius:var(--rl);padding:1.25rem;margin-bottom:1rem">
+        <div style="font-size:14px;font-weight:600;color:#3C3489;margin-bottom:12px">📋 Crear pedido con los artículos filtrados</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px">
+          <div>
+            <div style="font-size:12px;color:#534AB7;margin-bottom:4px;font-weight:500">Título del pedido</div>
+            <input class="ai" id="pedl-titulo" placeholder="Ej: Compras semana 1" style="width:100%;background:white">
+          </div>
+          <div>
+            <div style="font-size:12px;color:#534AB7;margin-bottom:4px;font-weight:500">Asignar a</div>
+            <select class="ai" id="pedl-asignado" style="width:100%;background:white">
+              <option value="todos">Hugo y Apolo</option>
+              <option value="hugo">Hugo</option>
+              <option value="apolo">Apolo</option>
+            </select>
+          </div>
+          <div>
+            <div style="font-size:12px;color:#534AB7;margin-bottom:4px;font-weight:500">Sucursal</div>
+            <select class="ai" id="pedl-sucursal" style="width:100%;background:white">
+              <option value="ambos">Ambos</option>
+              <option value="moctezuma">Moctezuma</option>
+              <option value="narvarte">Narvarte</option>
+            </select>
+          </div>
+        </div>
+        <div id="pedl-preview" style="background:white;border-radius:var(--r);padding:10px 12px;font-size:12px;color:var(--gray-600);margin-bottom:12px;max-height:140px;overflow-y:auto;border:1px solid #AFA9EC"></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary" onclick="crearPedidoDesdeLista()">Crear pedido</button>
+          <button class="btn" onclick="document.getElementById('form-pedido-lista').style.display='none'" style="background:white">Cancelar</button>
+        </div>
+      </div>
+
       <div class="cards-row" id="lista-summary"></div>
       <div id="lista-resultados"></div>
       <div id="lista-preview-wrap" style="display:none;margin-top:1rem">
@@ -1352,8 +1384,13 @@ function buildLista(){
   if(!items.length){
     document.getElementById('lista-resultados').innerHTML=`<div class="lista-empty">Sin resultados con estos filtros</div>`;
     document.getElementById('lista-preview-wrap').style.display='none';
+    const btnPed=document.getElementById('btn-crear-pedido');
+    if(btnPed) btnPed.style.display='none';
     return;
   }
+  // show crear pedido button for admins when there are pending items
+  const btnPed=document.getElementById('btn-crear-pedido');
+  if(btnPed) btnPed.style.display=(currentUser?.role==='admin'&&pend>0)?'flex':'none';
   // group by section or proveedor
   const groupBy = seccion==='all'?'_seccion':'proveedor';
   const groups={};
@@ -1527,7 +1564,60 @@ async function loadPedidos(){
   comprasData = comps||[];
 }
 
-function mostrarFormPedido(){
+function mostrarFormPedidoDesdeLista(){
+  const items = getListaItems().filter(d=>!d.comprado);
+  if(!items.length){ alert('No hay artículos pendientes con estos filtros.'); return; }
+  const form = document.getElementById('form-pedido-lista');
+  form.style.display = 'block';
+  // auto-fill title from active filters
+  const prov = document.getElementById('lf-proveedor').value;
+  const cat  = document.getElementById('lf-categoria').value;
+  const sec  = document.getElementById('lf-seccion').value;
+  let titulo = 'Pedido';
+  if(prov!=='all') titulo += ` — ${prov}`;
+  else if(cat!=='all') titulo += ` — ${cat}`;
+  else if(sec!=='all') titulo += ` — ${sec}`;
+  document.getElementById('pedl-titulo').value = titulo;
+  // preview items
+  document.getElementById('pedl-preview').innerHTML =
+    `<strong>${items.length} artículos:</strong><br>` +
+    items.map(d=>`• ${d.nombre}${d.cantidad>0?` ×${d.cantidad}`:''}${d.proveedor?` (${d.proveedor})`:''}`).join('<br>');
+  form.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+async function crearPedidoDesdeLista(){
+  const titulo = document.getElementById('pedl-titulo').value.trim();
+  if(!titulo){ alert('Ponle un título al pedido'); return; }
+  const items = getListaItems().filter(d=>!d.comprado);
+  if(!items.length){ alert('No hay artículos pendientes.'); return; }
+  markSaving();
+  const {data:ped,error} = await sb.from('gestor_pedidos').insert({
+    titulo,
+    descripcion: `Creado desde Lista de Compras — ${new Date().toLocaleDateString('es-MX')}`,
+    asignado_a: document.getElementById('pedl-asignado').value,
+    sucursal: document.getElementById('pedl-sucursal').value,
+    creado_por: currentUser.name,
+    estado: 'pendiente'
+  }).select().single();
+  if(error||!ped){ markSaved(); alert('Error al crear pedido'); return; }
+  const rowItems = items.map(d=>({
+    pedido_id: ped.id,
+    nombre: d.nombre + (d.cantidad>0?` ×${d.cantidad}`:'') + (d.proveedor?` (${d.proveedor})`:''),
+    cantidad: d.cantidad||1,
+    completado: false
+  }));
+  await sb.from('gestor_pedido_items').insert(rowItems);
+  markSaved();
+  document.getElementById('form-pedido-lista').style.display='none';
+  await loadPedidos();
+  // go to pedidos tab
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('sec-pedidos').classList.add('active');
+  document.getElementById('nav-pedidos').classList.add('active');
+  buildPedidos();
+  alert(`✓ Pedido "${titulo}" creado con ${items.length} artículos`);
+}
   document.getElementById('form-pedido').style.display='block';
   document.getElementById('ped-titulo').focus();
 }
