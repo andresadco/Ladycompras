@@ -156,7 +156,29 @@ tbody tr.row-comprado:hover td{background:#e4f5ea}
 /* LOCKED */
 .locked-msg{background:var(--gray-100);border-radius:var(--rl);padding:3rem;text-align:center;margin-top:1rem}
 
-/* DASHBOARD */
+/* LISTA DE COMPRAS */
+.lista-group{background:white;border:1px solid var(--gray-200);border-radius:var(--rl);margin-bottom:12px;overflow:hidden}
+.lista-group-header{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;background:var(--gray-50);border-bottom:1px solid var(--gray-200)}
+.lista-group-title{font-size:13px;font-weight:600;color:var(--gray-900)}
+.lista-group-count{font-size:11px;color:var(--gray-400);font-family:var(--mono)}
+.lista-item{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--gray-100)}
+.lista-item:last-child{border-bottom:none}
+.lista-item.comprado{background:#f0faf4;opacity:.7}
+.lista-item-check{flex-shrink:0}
+.lista-item-name{flex:1;font-size:13px;color:var(--gray-900);font-weight:500}
+.lista-item-meta{display:flex;gap:6px;align-items:center;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end}
+.lista-tag{font-size:11px;padding:2px 7px;border-radius:20px;font-weight:500}
+.lt-cat{background:var(--gray-100);color:var(--gray-600)}
+.lt-prov{background:var(--blue-light);color:var(--blue)}
+.lt-moc{background:var(--green-light);color:var(--green)}
+.lt-nar{background:var(--blue-light);color:var(--blue)}
+.lt-amb{background:var(--amber-light);color:var(--amber)}
+.lista-price{font-size:12px;font-family:var(--mono);color:var(--gray-600);min-width:60px;text-align:right}
+.lista-empty{text-align:center;padding:3rem;color:var(--gray-400);font-size:14px}
+@media(max-width:600px){
+  .lista-item{flex-wrap:wrap;gap:6px}
+  .lista-item-meta{width:100%;justify-content:flex-start}
+}
 .dash-greeting{font-size:22px;font-weight:600;color:var(--gray-900);margin-bottom:4px}
 .dash-sub{font-size:14px;color:var(--gray-400);margin-bottom:1.5rem}
 .dash-section-title{font-size:12px;font-weight:600;color:var(--gray-400);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px;margin-top:1.5rem}
@@ -366,6 +388,7 @@ tbody tr.row-comprado:hover td{background:#e4f5ea}
     <button class="nav-tab" onclick="showTab('insumos',this)">Insumos</button>
     <button class="nav-tab" id="nav-eq" onclick="showTab('equipos',this)">Equipos</button>
     <button class="nav-tab" id="nav-pres" onclick="showTab('presupuesto',this)">Presupuesto</button>
+    <button class="nav-tab" id="nav-lista" onclick="showTab('lista',this)">🛒 Lista</button>
   </div>
 
   <div class="content">
@@ -537,6 +560,74 @@ tbody tr.row-comprado:hover td{background:#e4f5ea}
           <div class="budget-title">Progreso de compras</div>
           <div id="pres-progress"></div>
         </div>
+      </div>
+    </div>
+
+    <!-- LISTA DE COMPRAS -->
+    <div class="section" id="sec-lista">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;margin-bottom:1.25rem">
+        <div>
+          <div style="font-size:18px;font-weight:600;color:var(--gray-900)">Lista de compras</div>
+          <div style="font-size:13px;color:var(--gray-400);margin-top:2px">Todo lo que falta comprar, filtrado como quieras</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn" onclick="togglePreview()" style="display:flex;align-items:center;gap:6px">📋 Copiar para WhatsApp</button>
+          <button class="btn btn-primary" onclick="buildLista()">↺ Actualizar</button>
+        </div>
+      </div>
+      <div style="background:white;border:1px solid var(--gray-200);border-radius:var(--rl);padding:1rem 1.25rem;margin-bottom:1rem">
+        <div style="font-size:12px;font-weight:600;color:var(--gray-400);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Filtros</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px">
+          <div>
+            <div style="font-size:12px;color:var(--gray-600);margin-bottom:4px;font-weight:500">Sección</div>
+            <select class="ai" id="lf-seccion" style="width:100%" onchange="buildLista()">
+              <option value="all">Todas</option>
+              <option value="utensilios">Utensilios</option>
+              <option value="insumos">Insumos</option>
+              <option value="equipos">Equipos</option>
+            </select>
+          </div>
+          <div>
+            <div style="font-size:12px;color:var(--gray-600);margin-bottom:4px;font-weight:500">Sucursal (equipos)</div>
+            <select class="ai" id="lf-sucursal" style="width:100%" onchange="buildLista()">
+              <option value="all">Todas</option>
+              <option value="moctezuma">Moctezuma</option>
+              <option value="narvarte">Narvarte</option>
+              <option value="ambos">Ambos locales</option>
+            </select>
+          </div>
+          <div>
+            <div style="font-size:12px;color:var(--gray-600);margin-bottom:4px;font-weight:500">Proveedor</div>
+            <select class="ai" id="lf-proveedor" style="width:100%" onchange="buildLista()">
+              <option value="all">Todos</option>
+            </select>
+          </div>
+          <div>
+            <div style="font-size:12px;color:var(--gray-600);margin-bottom:4px;font-weight:500">Categoría</div>
+            <select class="ai" id="lf-categoria" style="width:100%" onchange="buildLista()">
+              <option value="all">Todas</option>
+            </select>
+          </div>
+          <div>
+            <div style="font-size:12px;color:var(--gray-600);margin-bottom:4px;font-weight:500">Estado</div>
+            <select class="ai" id="lf-estado" style="width:100%" onchange="buildLista()">
+              <option value="pendiente">Pendientes</option>
+              <option value="comprado">Comprados</option>
+              <option value="all">Todos</option>
+            </select>
+          </div>
+          <div>
+            <div style="font-size:12px;color:var(--gray-600);margin-bottom:4px;font-weight:500">Buscar</div>
+            <input class="ai" id="lf-texto" placeholder="Nombre…" style="width:100%" oninput="buildLista()">
+          </div>
+        </div>
+      </div>
+      <div class="cards-row" id="lista-summary"></div>
+      <div id="lista-resultados"></div>
+      <div id="lista-preview-wrap" style="display:none;margin-top:1rem">
+        <div style="font-size:12px;font-weight:600;color:var(--gray-400);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Vista previa — listo para copiar</div>
+        <div style="background:#e8f5e9;border-radius:var(--rl);padding:1rem 1.25rem;font-size:13px;font-family:var(--mono);white-space:pre-wrap;color:#1b5e20;line-height:1.7;border:1px solid #a5d6a7" id="lista-preview"></div>
+        <button class="btn btn-primary" onclick="copiarLista()" style="margin-top:10px;width:100%">📋 Copiar al portapapeles</button>
       </div>
     </div>
 
@@ -1102,6 +1193,142 @@ function buildDashboard(){
   `;
 }
 
+// ── LISTA DE COMPRAS ─────────────────────────────────────
+function poblarFiltros(){
+  const provs=new Set(), cats=new Set();
+  [...utData,...insData,...eqData].forEach(d=>{
+    if(d.proveedor&&d.proveedor.trim()) provs.add(d.proveedor.trim());
+    const cat=d.categoria||'';
+    if(cat) cats.add(cat);
+  });
+  const selProv=document.getElementById('lf-proveedor');
+  const selCat=document.getElementById('lf-categoria');
+  const curProv=selProv.value, curCat=selCat.value;
+  selProv.innerHTML='<option value="all">Todos</option>'+[...provs].sort().map(p=>`<option value="${p}"${p===curProv?' selected':''}>${p}</option>`).join('');
+  selCat.innerHTML='<option value="all">Todas</option>'+[...cats].sort().map(c=>`<option value="${c}"${c===curCat?' selected':''}>${c}</option>`).join('');
+}
+
+function getListaItems(){
+  const seccion=document.getElementById('lf-seccion').value;
+  const sucursal=document.getElementById('lf-sucursal').value;
+  const proveedor=document.getElementById('lf-proveedor').value;
+  const categoria=document.getElementById('lf-categoria').value;
+  const estado=document.getElementById('lf-estado').value;
+  const texto=(document.getElementById('lf-texto').value||'').toLowerCase();
+  let items=[];
+  if(seccion==='all'||seccion==='utensilios') utData.forEach(d=>items.push({...d,_seccion:'Utensilios',_sucursal:'—'}));
+  if(seccion==='all'||seccion==='insumos')    insData.forEach(d=>items.push({...d,_seccion:'Insumos',_sucursal:'—'}));
+  if(seccion==='all'||seccion==='equipos')    eqData.forEach(d=>items.push({...d,_seccion:'Equipos',_sucursal:d.sucursal||'—',categoria:d.categoria||'equipo'}));
+  return items.filter(d=>{
+    const matchSuc  = sucursal==='all'||d._seccion!=='Equipos'||d._sucursal===sucursal;
+    const matchProv = proveedor==='all'||(d.proveedor||'').trim()===proveedor;
+    const matchCat  = categoria==='all'||(d.categoria||'')===categoria;
+    const matchEst  = estado==='all'||(estado==='comprado'&&d.comprado)||(estado==='pendiente'&&!d.comprado);
+    const matchTxt  = !texto||(d.nombre||'').toLowerCase().includes(texto);
+    return matchSuc&&matchProv&&matchCat&&matchEst&&matchTxt;
+  });
+}
+
+function buildLista(){
+  poblarFiltros();
+  const items=getListaItems();
+  const seccion=document.getElementById('lf-seccion').value;
+  const pend=items.filter(d=>!d.comprado).length;
+  const comp=items.filter(d=>d.comprado).length;
+  const precio=items.filter(d=>!d.comprado).reduce((a,d)=>a+(d.precio||0),0);
+  document.getElementById('lista-summary').innerHTML=`
+    <div class="mc"><div class="mc-label">Total artículos</div><div class="mc-val">${items.length}</div></div>
+    <div class="mc" style="background:#fffbeb;border-color:#fde68a"><div class="mc-label" style="color:var(--amber)">Pendientes</div><div class="mc-val" style="color:var(--amber)">${pend}</div></div>
+    <div class="mc mc-comprados"><div class="mc-label">Comprados</div><div class="mc-val">${comp}</div></div>
+    ${precio>0?`<div class="mc"><div class="mc-label">Por gastar</div><div class="mc-val">${fmt(precio)}</div></div>`:''}`;
+  if(!items.length){
+    document.getElementById('lista-resultados').innerHTML=`<div class="lista-empty">Sin resultados con estos filtros</div>`;
+    document.getElementById('lista-preview-wrap').style.display='none';
+    return;
+  }
+  // group by section or proveedor
+  const groupBy = seccion==='all'?'_seccion':'proveedor';
+  const groups={};
+  items.forEach(d=>{
+    const g=d[groupBy]||'Sin proveedor';
+    if(!groups[g]) groups[g]=[];
+    groups[g].push(d);
+  });
+  const sucClass={moctezuma:'lt-moc',narvarte:'lt-nar',ambos:'lt-amb'};
+  const sucLabel={moctezuma:'Moctezuma',narvarte:'Narvarte',ambos:'Ambos'};
+  let html='';
+  Object.entries(groups).sort().forEach(([gname,gitems])=>{
+    const pendG=gitems.filter(x=>!x.comprado).length;
+    const rows=gitems.map(d=>`
+      <div class="lista-item${d.comprado?' comprado':''}">
+        <div class="lista-item-check"><input type="checkbox" class="cbuy" ${d.comprado?'checked':''} onchange="toggleDesdeLista(event,'${d._seccion}','${d.id}',this.checked)"></div>
+        <div class="lista-item-name">${d.nombre}</div>
+        <div class="lista-item-meta">
+          ${d.categoria?`<span class="lista-tag lt-cat">${d.categoria}</span>`:''}
+          ${d.proveedor&&seccion!=='all'?`<span class="lista-tag lt-prov">${d.proveedor}</span>`:''}
+          ${d._sucursal&&d._sucursal!=='—'?`<span class="lista-tag ${sucClass[d._sucursal]||''}">${sucLabel[d._sucursal]||d._sucursal}</span>`:''}
+          ${d.cantidad>0?`<span style="font-size:11px;color:var(--gray-400)">×${d.cantidad}</span>`:''}
+        </div>
+        <div class="lista-price">${d.precio>0?fmt(d.precio):''}</div>
+      </div>`).join('');
+    html+=`<div class="lista-group">
+      <div class="lista-group-header">
+        <span class="lista-group-title">${gname}</span>
+        <span class="lista-group-count">${pendG} pendiente${pendG!==1?'s':''} de ${gitems.length}</span>
+      </div>${rows}</div>`;
+  });
+  document.getElementById('lista-resultados').innerHTML=html;
+  buildListaPreview(items);
+}
+
+function buildListaPreview(items){
+  const pend=items.filter(d=>!d.comprado);
+  if(!pend.length){document.getElementById('lista-preview-wrap').style.display='none';return;}
+  const grupos={};
+  pend.forEach(d=>{if(!grupos[d._seccion])grupos[d._seccion]=[];grupos[d._seccion].push(d);});
+  const fecha=new Date().toLocaleDateString('es-MX',{day:'2-digit',month:'long',year:'numeric'});
+  let txt=`🛒 *LISTA DE COMPRAS — LADY FRESA*\n📅 ${fecha}\n\n`;
+  Object.entries(grupos).forEach(([sec,its])=>{
+    txt+=`*${sec.toUpperCase()}*\n`;
+    its.forEach(d=>{
+      const qty=d.cantidad>0?` (×${d.cantidad})`:'';
+      const prov=d.proveedor?` — ${d.proveedor}`:'';
+      const suc=d._sucursal&&d._sucursal!=='—'?` [${d._sucursal}]`:'';
+      txt+=`  ☐ ${d.nombre}${qty}${prov}${suc}\n`;
+    });
+    txt+='\n';
+  });
+  txt+=`Total pendientes: ${pend.length} artículos`;
+  document.getElementById('lista-preview').textContent=txt;
+  document.getElementById('lista-preview-wrap').style.display='block';
+}
+
+function togglePreview(){
+  const w=document.getElementById('lista-preview-wrap');
+  w.style.display=w.style.display==='none'?'block':'none';
+}
+
+async function copiarLista(){
+  const txt=document.getElementById('lista-preview').textContent;
+  if(!txt){alert('No hay artículos pendientes.');return;}
+  try{
+    await navigator.clipboard.writeText(txt);
+    const btn=event.target;
+    const orig=btn.textContent;
+    btn.textContent='✓ ¡Copiado!';
+    setTimeout(()=>btn.textContent=orig,2000);
+  }catch(e){prompt('Copia este texto:',txt);}
+}
+
+async function toggleDesdeLista(e,seccion,id,val){
+  e.stopPropagation();
+  const type=seccion==='Utensilios'?'ut':seccion==='Insumos'?'ins':null;
+  if(type) await toggleComprado(type,id,val);
+  else await toggleEqComprado(id,val);
+  buildLista();
+}
+
+// ── NAVIGATION ───────────────────────────────────────────
 function goTab(name){
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
@@ -1121,6 +1348,7 @@ function showTab(name,btn){
   btn.classList.add('active');
   if(name==='equipos') buildEquipos();
   if(name==='dashboard') buildDashboard();
+  if(name==='lista'){ poblarFiltros(); buildLista(); }
   updateSummary();
 }
 
