@@ -158,15 +158,39 @@ tbody tr.row-comprado:hover td{background:#e4f5ea}
 
 /* PEDIDOS Y COMPRAS */
 .pedido-card{background:white;border:1px solid var(--gray-200);border-radius:var(--rl);padding:1.1rem 1.25rem;margin-bottom:10px}
-.pedido-card.completado{border-color:#9FE1CB;background:#f8fdf9;opacity:.8}
+.pedido-card.completado{border-color:#9FE1CB;background:#f8fdf9}
 .pedido-header{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px}
 .pedido-title{font-size:14px;font-weight:600;color:var(--gray-900)}
 .pedido-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
 .pedido-items{margin:10px 0;border-top:1px solid var(--gray-100);padding-top:10px}
-.pedido-item-row{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--gray-50);font-size:13px}
-.pedido-item-row:last-child{border-bottom:none}
-.pedido-item-name{flex:1;color:var(--gray-900)}
-.pedido-item-name.done{text-decoration:line-through;color:var(--gray-400)}
+
+/* ITEM EXPANDIBLE */
+.pitem{border:1px solid var(--gray-200);border-radius:var(--r);margin-bottom:8px;overflow:hidden;transition:border-color .15s}
+.pitem.done{border-color:#9FE1CB;background:#f8fdf9}
+.pitem.done .pitem-header{background:#f0faf4}
+.pitem-header{display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer;user-select:none;background:white;transition:background .1s}
+.pitem-header:hover{background:var(--gray-50)}
+.pitem-check{flex-shrink:0}
+.pitem-name{flex:1;font-size:13px;font-weight:500;color:var(--gray-900)}
+.pitem-name.done{text-decoration:line-through;color:var(--gray-400)}
+.pitem-status{font-size:11px;flex-shrink:0;display:flex;align-items:center;gap:6px}
+.pitem-chevron{font-size:11px;color:var(--gray-400);transition:transform .2s;flex-shrink:0}
+.pitem-chevron.open{transform:rotate(180deg)}
+.pitem-body{display:none;padding:12px;border-top:1px solid var(--gray-100);background:var(--gray-50)}
+.pitem-body.open{display:block}
+.pitem-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.pitem-field{display:flex;flex-direction:column;gap:4px}
+.pitem-field.full{grid-column:1/-1}
+.pitem-label{font-size:11px;font-weight:500;color:var(--gray-400);text-transform:uppercase;letter-spacing:.4px}
+.pitem-input{padding:7px 10px;border:1px solid var(--gray-200);border-radius:var(--r);font-size:13px;font-family:var(--font);background:white;color:var(--gray-900);width:100%}
+.pitem-input:focus{outline:none;border-color:var(--red)}
+.pitem-input.mono{font-family:var(--mono)}
+.pitem-foto-preview{margin-top:6px}
+.pitem-foto-preview img{width:80px;height:80px;border-radius:var(--r);object-fit:cover;border:1px solid var(--gray-200)}
+.pitem-save{padding:6px 16px;background:var(--green);color:white;border:none;border-radius:var(--r);font-size:13px;cursor:pointer;font-family:var(--font);font-weight:500}
+.pitem-save:hover{background:#135a31}
+.pitem-saved-info{font-size:11px;color:var(--green);margin-top:6px}
+@media(max-width:600px){.pitem-grid{grid-template-columns:1fr}}
 .compra-card{background:white;border:1px solid var(--gray-200);border-radius:var(--rl);padding:1rem 1.25rem;margin-bottom:10px;display:flex;gap:14px;align-items:flex-start}
 .compra-card-img{width:60px;height:60px;border-radius:var(--r);object-fit:cover;border:1px solid var(--gray-200);flex-shrink:0;background:var(--gray-100);display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--gray-400)}
 .compra-card-img img{width:60px;height:60px;border-radius:var(--r);object-fit:cover}
@@ -1651,10 +1675,48 @@ async function guardarPedido(){
 
 async function togglePedidoItem(itemId, val){
   markSaving();
-  await sb.from('gestor_pedido_items').update({completado:val}).eq('id',itemId);
-  const item = pedidosData.flatMap(p=>p.items).find(i=>i.id===itemId);
-  if(item) item.completado=val;
-  // update pedido estado
+  await sb.from('gestor_pedido_items').update({completado:val, registrado_por:currentUser.name}).eq('id',itemId);
+  const item=pedidosData.flatMap(p=>p.items).find(i=>i.id===itemId);
+  if(item){item.completado=val; item.registrado_por=currentUser.name;}
+  await actualizarEstadoPedidos();
+  markSaved();
+  buildPedidos();
+}
+
+async function guardarDatosItem(itemId){
+  const precio = parseFloat(document.getElementById(`iprecio-${itemId}`)?.value)||0;
+  const donde  = document.getElementById(`idonde-${itemId}`)?.value||'';
+  const notas  = document.getElementById(`inotas-${itemId}`)?.value||'';
+  const fotoFile = document.getElementById(`ifoto-${itemId}`)?.files[0];
+  let foto_url = pedidosData.flatMap(p=>p.items).find(i=>i.id===itemId)?.foto_url||'';
+
+  if(fotoFile){
+    const ext=fotoFile.name.split('.').pop();
+    const path=`tickets/item_${itemId}_${Date.now()}.${ext}`;
+    const {data:upData,error:upErr}=await sb.storage.from('compras-tickets').upload(path,fotoFile,{upsert:true});
+    if(!upErr&&upData){
+      const {data:urlData}=sb.storage.from('compras-tickets').getPublicUrl(path);
+      foto_url=urlData?.publicUrl||'';
+    }
+  }
+
+  markSaving();
+  const completado = precio>0||donde.length>0;
+  await sb.from('gestor_pedido_items').update({
+    precio_pagado:precio, donde_compro:donde, notas,
+    foto_url, completado, registrado_por:currentUser.name
+  }).eq('id',itemId);
+
+  const item=pedidosData.flatMap(p=>p.items).find(i=>i.id===itemId);
+  if(item){item.precio_pagado=precio;item.donde_compro=donde;item.notas=notas;item.foto_url=foto_url;item.completado=completado;item.registrado_por=currentUser.name;}
+  await actualizarEstadoPedidos();
+  markSaved();
+  buildPedidos();
+  // re-open the item after rebuild
+  setTimeout(()=>{ const b=document.getElementById(`pitem-body-${itemId}`); if(b){b.classList.add('open'); document.getElementById(`pitem-chev-${itemId}`)?.classList.add('open');} },50);
+}
+
+async function actualizarEstadoPedidos(){
   for(const p of pedidosData){
     const comp=p.items.filter(i=>i.completado).length;
     const total=p.items.length;
@@ -1664,8 +1726,13 @@ async function togglePedidoItem(itemId, val){
       p.estado=newEstado;
     }
   }
-  markSaved();
-  buildPedidos();
+}
+
+function toggleItemBody(itemId){
+  const body=document.getElementById(`pitem-body-${itemId}`);
+  const chev=document.getElementById(`pitem-chev-${itemId}`);
+  body.classList.toggle('open');
+  chev.classList.toggle('open');
 }
 
 async function eliminarPedido(id){
@@ -1685,40 +1752,99 @@ function buildPedidos(){
   const sucClass={moctezuma:'lt-moc',narvarte:'lt-nar',ambos:'lt-amb'};
   let peds=pedidosData;
   if(!isAdmin) peds=peds.filter(p=>p.asignado_a==='todos'||p.asignado_a===currentUser.uid);
+
   const html=peds.map(p=>{
     const comp=p.items.filter(i=>i.completado).length;
     const total=p.items.length;
     const pct=total?Math.round(comp/total*100):0;
     const estadoClass={pendiente:'ep-pendiente',completado:'ep-completado',parcial:'ep-parcial'};
-    const estadoLabel={pendiente:'Pendiente',completado:'Completado',parcial:'En proceso'};
-    const itemRows=p.items.map(it=>`
-      <div class="pedido-item-row">
-        <input type="checkbox" class="cbuy" ${it.completado?'checked':''} onchange="togglePedidoItem('${it.id}',this.checked)">
-        <span class="pedido-item-name${it.completado?' done':''}">${it.nombre}</span>
-      </div>`).join('');
+    const estadoLabel={pendiente:'Pendiente',completado:'En proceso',parcial:'En proceso'};
+
+    const itemRows=p.items.map(it=>{
+      const hasDatos=it.precio_pagado>0||it.donde_compro;
+      const statusHtml=it.completado
+        ?`<span style="font-size:11px;background:var(--green-light);color:var(--green);padding:2px 8px;border-radius:20px;font-weight:500">✓ Comprado</span>`
+        :`<span style="font-size:11px;color:var(--gray-400)">Toca para registrar →</span>`;
+      const savedInfo=hasDatos?`
+        <div class="pitem-saved-info" style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;padding:8px 10px;background:var(--green-light);border-radius:var(--r)">
+          ${it.precio_pagado>0?`<span>💰 ${isAdmin?fmt(it.precio_pagado):'registrado'}</span>`:''}
+          ${it.donde_compro?`<span>📍 ${it.donde_compro}</span>`:''}
+          ${it.registrado_por?`<span>👤 ${it.registrado_por}</span>`:''}
+          ${it.foto_url?`<a href="${it.foto_url}" target="_blank" style="color:var(--green)">📷 Ver ticket</a>`:''}
+        </div>`:'';
+      return `
+        <div class="pitem${it.completado?' done':''}" id="pitem-${it.id}">
+          <div class="pitem-header" onclick="toggleItemBody('${it.id}')">
+            <input type="checkbox" class="cbuy pitem-check" ${it.completado?'checked':''} onchange="togglePedidoItem('${it.id}',this.checked)" onclick="event.stopPropagation()">
+            <span class="pitem-name${it.completado?' done':''}">${it.nombre}</span>
+            <div class="pitem-status">${statusHtml}</div>
+            <span class="pitem-chevron${it.completado&&hasDatos?' open':''}" id="pitem-chev-${it.id}">▼</span>
+          </div>
+          <div class="pitem-body${it.completado&&hasDatos?' open':''}" id="pitem-body-${it.id}">
+            ${savedInfo}
+            <div class="pitem-grid" style="margin-top:${hasDatos?'10px':'0'}">
+              <div class="pitem-field">
+                <span class="pitem-label">¿Cuánto pagaste? $</span>
+                <input class="pitem-input mono" id="iprecio-${it.id}" type="number" inputmode="decimal" placeholder="0.00" value="${it.precio_pagado||''}">
+              </div>
+              <div class="pitem-field">
+                <span class="pitem-label">¿Dónde compraste?</span>
+                <input class="pitem-input" id="idonde-${it.id}" placeholder="Costco, Liverpool…" value="${it.donde_compro||''}">
+              </div>
+              <div class="pitem-field full">
+                <span class="pitem-label">Notas (opcional)</span>
+                <input class="pitem-input" id="inotas-${it.id}" placeholder="Número de pedido, detalles…" value="${it.notas||''}">
+              </div>
+              <div class="pitem-field full">
+                <span class="pitem-label">Foto del ticket (opcional)</span>
+                <input type="file" id="ifoto-${it.id}" accept="image/*" capture="environment" style="font-size:13px" onchange="previsualizarFotoItem('${it.id}',this)">
+                <div class="pitem-foto-preview" id="ifoto-prev-${it.id}">
+                  ${it.foto_url?`<a href="${it.foto_url}" target="_blank"><img src="${it.foto_url}"></a>`:''}
+                </div>
+              </div>
+            </div>
+            <button class="pitem-save" onclick="guardarDatosItem('${it.id}')">✓ Guardar y marcar como comprado</button>
+          </div>
+        </div>`;
+    }).join('');
+
     return `<div class="pedido-card${p.estado==='completado'?' completado':''}">
       <div class="pedido-header">
         <div style="flex:1">
           <div class="pedido-title">${p.titulo}</div>
           <div class="pedido-meta">
-            <span class="estado-pill ${estadoClass[p.estado]}">${estadoLabel[p.estado]}</span>
+            <span class="estado-pill ${estadoClass[p.estado]||'ep-pendiente'}">${p.estado==='completado'?'Completado':p.estado==='parcial'?'En proceso':'Pendiente'}</span>
             <span class="lista-tag ${sucClass[p.sucursal]||'lt-cat'}">${sucLabel[p.sucursal]||p.sucursal}</span>
             <span class="lista-tag lt-cat">Para: ${p.asignado_a==='todos'?'Hugo y Apolo':p.asignado_a}</span>
           </div>
           ${p.descripcion?`<div style="font-size:12px;color:var(--gray-400);margin-top:6px">${p.descripcion}</div>`:''}
         </div>
         <div style="text-align:right;flex-shrink:0">
-          <div style="font-size:13px;font-family:var(--mono);font-weight:600;color:${pct===100?'var(--green)':'var(--gray-900)'}">${comp}/${total}</div>
+          <div style="font-size:16px;font-family:var(--mono);font-weight:600;color:${pct===100?'var(--green)':'var(--gray-900)'}">${comp}/${total}</div>
           <div style="font-size:11px;color:var(--gray-400)">${pct}%</div>
           ${isAdmin?`<button class="del-btn" onclick="eliminarPedido('${p.id}')" style="margin-top:4px">✕</button>`:''}
         </div>
       </div>
-      <div style="background:var(--gray-100);border-radius:20px;height:6px;margin-bottom:10px"><div style="background:${pct===100?'var(--green)':'var(--blue)'};height:100%;width:${pct}%;border-radius:20px;transition:width .4s"></div></div>
+      <div style="background:var(--gray-100);border-radius:20px;height:6px;margin-bottom:12px">
+        <div style="background:${pct===100?'var(--green)':'var(--blue)'};height:100%;width:${pct}%;border-radius:20px;transition:width .5s"></div>
+      </div>
       <div class="pedido-items">${itemRows}</div>
     </div>`;
   }).join('');
+
   document.getElementById('lista-pedidos').innerHTML=html||`<div class="lista-empty">No hay pedidos aún${isAdmin?' — crea uno con el botón de arriba':''}</div>`;
   poblarSelectPedidos();
+}
+
+function previsualizarFotoItem(itemId, input){
+  const file=input.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    const prev=document.getElementById(`ifoto-prev-${itemId}`);
+    if(prev) prev.innerHTML=`<img src="${ev.target.result}" style="width:80px;height:80px;border-radius:var(--r);object-fit:cover;border:1px solid var(--gray-200)">`;
+  };
+  reader.readAsDataURL(file);
 }
 
 function poblarSelectPedidos(){
