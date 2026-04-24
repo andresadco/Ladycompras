@@ -156,7 +156,32 @@ tbody tr.row-comprado:hover td{background:#e4f5ea}
 /* LOCKED */
 .locked-msg{background:var(--gray-100);border-radius:var(--rl);padding:3rem;text-align:center;margin-top:1rem}
 
-/* LISTA DE COMPRAS */
+/* PEDIDOS Y COMPRAS */
+.pedido-card{background:white;border:1px solid var(--gray-200);border-radius:var(--rl);padding:1.1rem 1.25rem;margin-bottom:10px}
+.pedido-card.completado{border-color:#9FE1CB;background:#f8fdf9;opacity:.8}
+.pedido-header{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px}
+.pedido-title{font-size:14px;font-weight:600;color:var(--gray-900)}
+.pedido-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.pedido-items{margin:10px 0;border-top:1px solid var(--gray-100);padding-top:10px}
+.pedido-item-row{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--gray-50);font-size:13px}
+.pedido-item-row:last-child{border-bottom:none}
+.pedido-item-name{flex:1;color:var(--gray-900)}
+.pedido-item-name.done{text-decoration:line-through;color:var(--gray-400)}
+.compra-card{background:white;border:1px solid var(--gray-200);border-radius:var(--rl);padding:1rem 1.25rem;margin-bottom:10px;display:flex;gap:14px;align-items:flex-start}
+.compra-card-img{width:60px;height:60px;border-radius:var(--r);object-fit:cover;border:1px solid var(--gray-200);flex-shrink:0;background:var(--gray-100);display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--gray-400)}
+.compra-card-img img{width:60px;height:60px;border-radius:var(--r);object-fit:cover}
+.compra-info{flex:1}
+.compra-name{font-size:14px;font-weight:500;color:var(--gray-900);margin-bottom:4px}
+.compra-meta{font-size:12px;color:var(--gray-400);display:flex;flex-wrap:wrap;gap:8px}
+.compra-price{font-size:16px;font-weight:600;font-family:var(--mono);color:var(--green);flex-shrink:0}
+.estado-pill{padding:2px 10px;border-radius:20px;font-size:11px;font-weight:500}
+.ep-pendiente{background:#fffbeb;color:var(--amber)}
+.ep-completado{background:var(--green-light);color:var(--green)}
+.ep-parcial{background:var(--blue-light);color:var(--blue)}
+@media(max-width:600px){
+  .compra-card{flex-wrap:wrap}
+  .pedido-header{flex-wrap:wrap}
+}
 .lista-group{background:white;border:1px solid var(--gray-200);border-radius:var(--rl);margin-bottom:12px;overflow:hidden}
 .lista-group-header{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;background:var(--gray-50);border-bottom:1px solid var(--gray-200)}
 .lista-group-title{font-size:13px;font-weight:600;color:var(--gray-900)}
@@ -327,6 +352,10 @@ tbody tr.row-comprado:hover td{background:#e4f5ea}
         <div class="uav av-user">HU</div>
         <div><div style="font-size:13px;font-weight:500">Hugo</div><div style="font-size:11px;color:var(--gray-400)">Colaborador — acceso directo</div></div>
       </button>
+      <button class="user-btn" onclick="login('apolo')">
+        <div class="uav av-user">AP</div>
+        <div><div style="font-size:13px;font-weight:500">Apolo</div><div style="font-size:11px;color:var(--gray-400)">Colaborador — acceso directo</div></div>
+      </button>
     </div>
 
     <!-- PIN screen -->
@@ -389,6 +418,8 @@ tbody tr.row-comprado:hover td{background:#e4f5ea}
     <button class="nav-tab" id="nav-eq" onclick="showTab('equipos',this)">Equipos</button>
     <button class="nav-tab" id="nav-pres" onclick="showTab('presupuesto',this)">Presupuesto</button>
     <button class="nav-tab" id="nav-lista" onclick="showTab('lista',this)">🛒 Lista</button>
+    <button class="nav-tab" id="nav-pedidos" onclick="showTab('pedidos',this)">📋 Pedidos</button>
+    <button class="nav-tab" id="nav-compras" onclick="showTab('compras',this)">🧾 Mis compras</button>
   </div>
 
   <div class="content">
@@ -631,6 +662,82 @@ tbody tr.row-comprado:hover td{background:#e4f5ea}
       </div>
     </div>
 
+    <!-- PEDIDOS -->
+    <div class="section" id="sec-pedidos">
+      <div id="pedidos-admin" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:1.25rem">
+          <div><div style="font-size:18px;font-weight:600;color:var(--gray-900)">Pedidos</div><div style="font-size:13px;color:var(--gray-400);margin-top:2px">Asigna compras a Hugo o Apolo</div></div>
+          <button class="btn btn-primary" onclick="mostrarFormPedido()">+ Nuevo pedido</button>
+        </div>
+        <div id="form-pedido" style="display:none;background:white;border:1px solid var(--gray-200);border-radius:var(--rl);padding:1.25rem;margin-bottom:1rem">
+          <div style="font-size:14px;font-weight:600;margin-bottom:12px">Nuevo pedido</div>
+          <div style="display:grid;gap:10px">
+            <div><div style="font-size:12px;color:var(--gray-600);margin-bottom:4px;font-weight:500">Título del pedido</div><input class="ai" id="ped-titulo" placeholder="Ej: Compras Moctezuma semana 1" style="width:100%"></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <div><div style="font-size:12px;color:var(--gray-600);margin-bottom:4px;font-weight:500">Asignar a</div>
+                <select class="ai" id="ped-asignado" style="width:100%">
+                  <option value="todos">Hugo y Apolo</option>
+                  <option value="hugo">Hugo</option>
+                  <option value="apolo">Apolo</option>
+                </select>
+              </div>
+              <div><div style="font-size:12px;color:var(--gray-600);margin-bottom:4px;font-weight:500">Sucursal</div>
+                <select class="ai" id="ped-sucursal" style="width:100%">
+                  <option value="ambos">Ambos</option>
+                  <option value="moctezuma">Moctezuma</option>
+                  <option value="narvarte">Narvarte</option>
+                </select>
+              </div>
+            </div>
+            <div><div style="font-size:12px;color:var(--gray-600);margin-bottom:4px;font-weight:500">Artículos (uno por línea)</div><textarea class="ai" id="ped-items" rows="5" placeholder="Cucharas de madera&#10;Contenedores chicos&#10;Galleta Oreo" style="width:100%;resize:vertical;font-family:var(--font)"></textarea></div>
+            <div><div style="font-size:12px;color:var(--gray-600);margin-bottom:4px;font-weight:500">Notas (opcional)</div><input class="ai" id="ped-desc" placeholder="Instrucciones adicionales…" style="width:100%"></div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:12px">
+            <button class="btn btn-primary" onclick="guardarPedido()">Crear pedido</button>
+            <button class="btn" onclick="document.getElementById('form-pedido').style.display='none'">Cancelar</button>
+          </div>
+        </div>
+      </div>
+      <div id="pedidos-colab" style="display:none">
+        <div style="font-size:18px;font-weight:600;color:var(--gray-900);margin-bottom:4px">Mis pedidos</div>
+        <div style="font-size:13px;color:var(--gray-400);margin-bottom:1.25rem">Lo que tienes que ir a comprar</div>
+      </div>
+      <div id="lista-pedidos"></div>
+    </div>
+
+    <!-- MIS COMPRAS -->
+    <div class="section" id="sec-compras">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:1.25rem">
+        <div><div style="font-size:18px;font-weight:600;color:var(--gray-900)">Registrar compra</div><div style="font-size:13px;color:var(--gray-400);margin-top:2px" id="compras-sub">Anota lo que compraste</div></div>
+        <button class="btn btn-primary" onclick="mostrarFormCompra()">+ Registrar compra</button>
+      </div>
+      <div id="form-compra" style="display:none;background:white;border:1px solid var(--gray-200);border-radius:var(--rl);padding:1.25rem;margin-bottom:1rem">
+        <div style="font-size:14px;font-weight:600;margin-bottom:12px">Nueva compra</div>
+        <div style="display:grid;gap:10px">
+          <div><div style="font-size:12px;color:var(--gray-600);margin-bottom:4px;font-weight:500">¿Qué compraste?</div><input class="ai" id="comp-nombre" placeholder="Ej: Cucharas de madera x20" style="width:100%"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div><div style="font-size:12px;color:var(--gray-600);margin-bottom:4px;font-weight:500">¿Cuánto pagaste? $</div><input class="ai" id="comp-precio" type="number" inputmode="decimal" placeholder="0.00" style="width:100%;font-family:var(--mono)"></div>
+            <div><div style="font-size:12px;color:var(--gray-600);margin-bottom:4px;font-weight:500">Cantidad</div><input class="ai" id="comp-cantidad" type="number" inputmode="numeric" placeholder="1" style="width:100%"></div>
+          </div>
+          <div><div style="font-size:12px;color:var(--gray-600);margin-bottom:4px;font-weight:500">¿Dónde compraste?</div><input class="ai" id="comp-donde" placeholder="Ej: Costco, Liverpool, Mercado Libre…" style="width:100%"></div>
+          <div><div style="font-size:12px;color:var(--gray-600);margin-bottom:4px;font-weight:500">Notas (opcional)</div><input class="ai" id="comp-notas" placeholder="Número de pedido, detalles…" style="width:100%"></div>
+          <div>
+            <div style="font-size:12px;color:var(--gray-600);margin-bottom:4px;font-weight:500">Foto del ticket (opcional)</div>
+            <input type="file" id="comp-foto" accept="image/*" capture="environment" style="font-size:13px;width:100%">
+            <div id="comp-foto-preview" style="margin-top:8px"></div>
+          </div>
+          <div id="comp-pedido-wrap"><div style="font-size:12px;color:var(--gray-600);margin-bottom:4px;font-weight:500">Vincular a pedido (opcional)</div>
+            <select class="ai" id="comp-pedido" style="width:100%"><option value="">Sin pedido</option></select>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <button class="btn btn-primary" onclick="guardarCompra()">Guardar compra</button>
+          <button class="btn" onclick="document.getElementById('form-compra').style.display='none'">Cancelar</button>
+        </div>
+      </div>
+      <div id="lista-compras"></div>
+    </div>
+
   </div>
 </div>
 
@@ -643,7 +750,8 @@ const sb = createClient(SUPA_URL, SUPA_KEY);
 const USERS = {
   andres:  {name:'Andrés',   initials:'AN', role:'admin', av:'av-admin'},
   joseluis:{name:'José Luis',initials:'JL', role:'admin', av:'av-admin'},
-  hugo:    {name:'Hugo',     initials:'HU', role:'user',  av:'av-user'}
+  hugo:    {name:'Hugo',     initials:'HU', role:'colab',  av:'av-user'},
+  apolo:   {name:'Apolo',    initials:'AP', role:'colab',  av:'av-user'}
 };
 let currentUser = null;
 let showIva = false;
@@ -1404,7 +1512,222 @@ async function toggleDesdeLista(e,seccion,id,val){
   buildLista();
 }
 
-// ── NAVIGATION ───────────────────────────────────────────
+// ── PEDIDOS ──────────────────────────────────────────────
+let pedidosData = [];
+let comprasData = [];
+
+async function loadPedidos(){
+  const [{data:peds},{data:items},{data:comps}] = await Promise.all([
+    sb.from('gestor_pedidos').select('*').order('created_at',{ascending:false}),
+    sb.from('gestor_pedido_items').select('*').order('created_at'),
+    sb.from('gestor_compras').select('*').order('created_at',{ascending:false})
+  ]);
+  pedidosData = peds||[];
+  pedidosData.forEach(p=>{ p.items=(items||[]).filter(i=>i.pedido_id===p.id); });
+  comprasData = comps||[];
+}
+
+function mostrarFormPedido(){
+  document.getElementById('form-pedido').style.display='block';
+  document.getElementById('ped-titulo').focus();
+}
+
+async function guardarPedido(){
+  const titulo = document.getElementById('ped-titulo').value.trim();
+  if(!titulo){alert('Ponle un título al pedido');return;}
+  const itemsRaw = document.getElementById('ped-items').value.trim();
+  const nombres = itemsRaw.split('\n').map(s=>s.trim()).filter(Boolean);
+  if(!nombres.length){alert('Agrega al menos un artículo');return;}
+  markSaving();
+  const {data:ped,error} = await sb.from('gestor_pedidos').insert({
+    titulo, descripcion:document.getElementById('ped-desc').value,
+    asignado_a:document.getElementById('ped-asignado').value,
+    sucursal:document.getElementById('ped-sucursal').value,
+    creado_por:currentUser.name, estado:'pendiente'
+  }).select().single();
+  if(error||!ped){markSaved();return;}
+  const rowItems = nombres.map(n=>({pedido_id:ped.id,nombre:n,cantidad:1,completado:false}));
+  await sb.from('gestor_pedido_items').insert(rowItems);
+  markSaved();
+  document.getElementById('form-pedido').style.display='none';
+  document.getElementById('ped-titulo').value='';
+  document.getElementById('ped-items').value='';
+  document.getElementById('ped-desc').value='';
+  await loadPedidos();
+  buildPedidos();
+}
+
+async function togglePedidoItem(itemId, val){
+  markSaving();
+  await sb.from('gestor_pedido_items').update({completado:val}).eq('id',itemId);
+  const item = pedidosData.flatMap(p=>p.items).find(i=>i.id===itemId);
+  if(item) item.completado=val;
+  // update pedido estado
+  for(const p of pedidosData){
+    const comp=p.items.filter(i=>i.completado).length;
+    const total=p.items.length;
+    const newEstado=comp===0?'pendiente':comp===total?'completado':'parcial';
+    if(newEstado!==p.estado){
+      await sb.from('gestor_pedidos').update({estado:newEstado}).eq('id',p.id);
+      p.estado=newEstado;
+    }
+  }
+  markSaved();
+  buildPedidos();
+}
+
+async function eliminarPedido(id){
+  if(!confirm('¿Eliminar este pedido?'))return;
+  markSaving();
+  await sb.from('gestor_pedidos').delete().eq('id',id);
+  pedidosData=pedidosData.filter(p=>p.id!==id);
+  markSaved();
+  buildPedidos();
+}
+
+function buildPedidos(){
+  const isAdmin=currentUser?.role==='admin';
+  document.getElementById('pedidos-admin').style.display=isAdmin?'block':'none';
+  document.getElementById('pedidos-colab').style.display=isAdmin?'none':'block';
+  const sucLabel={moctezuma:'Moctezuma',narvarte:'Narvarte',ambos:'Ambos locales'};
+  const sucClass={moctezuma:'lt-moc',narvarte:'lt-nar',ambos:'lt-amb'};
+  let peds=pedidosData;
+  if(!isAdmin) peds=peds.filter(p=>p.asignado_a==='todos'||p.asignado_a===currentUser.uid);
+  const html=peds.map(p=>{
+    const comp=p.items.filter(i=>i.completado).length;
+    const total=p.items.length;
+    const pct=total?Math.round(comp/total*100):0;
+    const estadoClass={pendiente:'ep-pendiente',completado:'ep-completado',parcial:'ep-parcial'};
+    const estadoLabel={pendiente:'Pendiente',completado:'Completado',parcial:'En proceso'};
+    const itemRows=p.items.map(it=>`
+      <div class="pedido-item-row">
+        <input type="checkbox" class="cbuy" ${it.completado?'checked':''} onchange="togglePedidoItem('${it.id}',this.checked)">
+        <span class="pedido-item-name${it.completado?' done':''}">${it.nombre}</span>
+      </div>`).join('');
+    return `<div class="pedido-card${p.estado==='completado'?' completado':''}">
+      <div class="pedido-header">
+        <div style="flex:1">
+          <div class="pedido-title">${p.titulo}</div>
+          <div class="pedido-meta">
+            <span class="estado-pill ${estadoClass[p.estado]}">${estadoLabel[p.estado]}</span>
+            <span class="lista-tag ${sucClass[p.sucursal]||'lt-cat'}">${sucLabel[p.sucursal]||p.sucursal}</span>
+            <span class="lista-tag lt-cat">Para: ${p.asignado_a==='todos'?'Hugo y Apolo':p.asignado_a}</span>
+          </div>
+          ${p.descripcion?`<div style="font-size:12px;color:var(--gray-400);margin-top:6px">${p.descripcion}</div>`:''}
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-size:13px;font-family:var(--mono);font-weight:600;color:${pct===100?'var(--green)':'var(--gray-900)'}">${comp}/${total}</div>
+          <div style="font-size:11px;color:var(--gray-400)">${pct}%</div>
+          ${isAdmin?`<button class="del-btn" onclick="eliminarPedido('${p.id}')" style="margin-top:4px">✕</button>`:''}
+        </div>
+      </div>
+      <div style="background:var(--gray-100);border-radius:20px;height:6px;margin-bottom:10px"><div style="background:${pct===100?'var(--green)':'var(--blue)'};height:100%;width:${pct}%;border-radius:20px;transition:width .4s"></div></div>
+      <div class="pedido-items">${itemRows}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('lista-pedidos').innerHTML=html||`<div class="lista-empty">No hay pedidos aún${isAdmin?' — crea uno con el botón de arriba':''}</div>`;
+  poblarSelectPedidos();
+}
+
+function poblarSelectPedidos(){
+  const sel=document.getElementById('comp-pedido');
+  if(!sel)return;
+  const abiertos=pedidosData.filter(p=>p.estado!=='completado');
+  sel.innerHTML='<option value="">Sin pedido</option>'+abiertos.map(p=>`<option value="${p.id}">${p.titulo}</option>`).join('');
+}
+
+// ── COMPRAS ──────────────────────────────────────────────
+function mostrarFormCompra(){
+  document.getElementById('form-compra').style.display='block';
+  document.getElementById('comp-nombre').focus();
+  poblarSelectPedidos();
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  const fotoInput=document.getElementById('comp-foto');
+  if(fotoInput) fotoInput.addEventListener('change',e=>{
+    const file=e.target.files[0];
+    if(!file)return;
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      document.getElementById('comp-foto-preview').innerHTML=`<img src="${ev.target.result}" style="max-width:120px;max-height:120px;border-radius:var(--r);border:1px solid var(--gray-200)">`;
+    };
+    reader.readAsDataURL(file);
+  });
+});
+
+async function guardarCompra(){
+  const nombre=document.getElementById('comp-nombre').value.trim();
+  if(!nombre){alert('¿Qué compraste?');return;}
+  const precio=parseFloat(document.getElementById('comp-precio').value)||0;
+  const cantidad=parseInt(document.getElementById('comp-cantidad').value)||1;
+  const donde=document.getElementById('comp-donde').value.trim();
+  const notas=document.getElementById('comp-notas').value.trim();
+  const pedidoId=document.getElementById('comp-pedido').value||null;
+  // upload foto if any
+  let fotoUrl='';
+  const fotoFile=document.getElementById('comp-foto').files[0];
+  if(fotoFile){
+    markSaving();
+    const ext=fotoFile.name.split('.').pop();
+    const path=`tickets/${Date.now()}.${ext}`;
+    const {data:upData,error:upErr}=await sb.storage.from('compras-tickets').upload(path,fotoFile,{upsert:true});
+    if(!upErr&&upData){
+      const {data:urlData}=sb.storage.from('compras-tickets').getPublicUrl(path);
+      fotoUrl=urlData?.publicUrl||'';
+    }
+  }
+  markSaving();
+  const {data,error}=await sb.from('gestor_compras').insert({
+    nombre, precio_pagado:precio, cantidad, donde_compro:donde,
+    notas, foto_url:fotoUrl, registrado_por:currentUser.name,
+    pedido_id:pedidoId||null
+  }).select().single();
+  if(!error&&data) comprasData.unshift(data);
+  markSaved();
+  document.getElementById('form-compra').style.display='none';
+  document.getElementById('comp-nombre').value='';
+  document.getElementById('comp-precio').value='';
+  document.getElementById('comp-cantidad').value='';
+  document.getElementById('comp-donde').value='';
+  document.getElementById('comp-notas').value='';
+  document.getElementById('comp-foto').value='';
+  document.getElementById('comp-foto-preview').innerHTML='';
+  buildCompras();
+}
+
+function buildCompras(){
+  const isAdmin=currentUser?.role==='admin';
+  const lista=isAdmin?comprasData:comprasData.filter(c=>c.registrado_por===currentUser.name);
+  if(!lista.length){
+    document.getElementById('lista-compras').innerHTML=`<div class="lista-empty">Sin compras registradas aún</div>`;
+    return;
+  }
+  const html=lista.map(c=>{
+    const fecha=new Date(c.created_at).toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'});
+    const imgHtml=c.foto_url?`<a href="${c.foto_url}" target="_blank"><img src="${c.foto_url}" style="width:60px;height:60px;border-radius:var(--r);object-fit:cover;border:1px solid var(--gray-200)"></a>`:`<div style="width:60px;height:60px;border-radius:var(--r);background:var(--gray-100);display:flex;align-items:center;justify-content:center;font-size:22px">🧾</div>`;
+    return `<div class="compra-card">
+      ${imgHtml}
+      <div class="compra-info">
+        <div class="compra-name">${c.nombre}${c.cantidad>1?` ×${c.cantidad}`:''}</div>
+        <div class="compra-meta">
+          <span>📍 ${c.donde_compro||'Sin especificar'}</span>
+          <span>👤 ${c.registrado_por}</span>
+          <span>📅 ${fecha}</span>
+          ${c.notas?`<span>💬 ${c.notas}</span>`:''}
+        </div>
+      </div>
+      <div class="compra-price">${c.precio_pagado>0?fmt(c.precio_pagado):''}</div>
+    </div>`;
+  }).join('');
+  // total only for admins
+  const totalComp=isAdmin?comprasData.reduce((a,c)=>a+(c.precio_pagado||0),0):0;
+  document.getElementById('lista-compras').innerHTML=
+    (isAdmin&&totalComp>0?`<div style="display:flex;justify-content:space-between;align-items:center;background:var(--gray-900);color:white;padding:10px 16px;border-radius:var(--rl);margin-bottom:12px"><span style="font-size:13px;color:#9ca3af">Total gastado registrado</span><span style="font-size:20px;font-family:var(--mono);font-weight:600">${fmt(totalComp)}</span></div>`:'')
+    +html;
+}
+
+
 function goTab(name){
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
@@ -1425,6 +1748,8 @@ function showTab(name,btn){
   if(name==='equipos') buildEquipos();
   if(name==='dashboard') buildDashboard();
   if(name==='lista'){ poblarFiltros(); buildLista(); }
+  if(name==='pedidos') buildPedidos();
+  if(name==='compras') buildCompras();
   updateSummary();
 }
 
@@ -1498,7 +1823,7 @@ function checkPin() {
 
 // ── AUTH ─────────────────────────────────────────────────
 async function login(uid){
-  currentUser=USERS[uid];
+  currentUser={...USERS[uid], uid};
   document.getElementById('login-page').style.display='none';
   document.getElementById('app').style.display='flex';
   const av=document.getElementById('top-av');
@@ -1506,20 +1831,49 @@ async function login(uid){
   av.className='uav small-av '+currentUser.av;
   document.getElementById('top-name').textContent=currentUser.name;
   const isAdmin=currentUser.role==='admin';
+  const isColab=currentUser.role==='colab';
+
+  // admin-only sections
   document.getElementById('eq-locked').style.display=isAdmin?'none':'block';
   document.getElementById('eq-content').style.display=isAdmin?'block':'none';
   document.getElementById('pres-locked').style.display=isAdmin?'none':'block';
   document.getElementById('pres-content').style.display=isAdmin?'block':'none';
-  if(!isAdmin){
-    document.getElementById('nav-eq').style.display='none';
-    document.getElementById('nav-pres').style.display='none';
+
+  // hide tabs for colab
+  document.getElementById('nav-eq').style.display=isAdmin?'':'none';
+  document.getElementById('nav-pres').style.display=isAdmin?'':'none';
+  document.getElementById('nav-lista').style.display=isAdmin?'':'none';
+
+  // show pedidos/compras for everyone
+  document.getElementById('nav-pedidos').style.display='';
+  document.getElementById('nav-compras').style.display='';
+
+  // hide prices in tables for colab
+  if(isColab){
+    const style=document.createElement('style');
+    style.id='colab-style';
+    style.textContent=`
+      .ci-price, .ci-num, .subtotal, .lista-price, .compra-price,
+      .mc-val, .mc:not(.mc-comprados), .dbc-val, .dbc-sub,
+      thead th:nth-child(5), thead th:nth-child(6),
+      tbody td:nth-child(5), tbody td:nth-child(6),
+      #ut-total, #ins-total, #ut-qty { display:none!important; }
+      .mc-comprados .mc-val { display:block!important; }
+    `;
+    document.head.appendChild(style);
+  } else {
+    const old=document.getElementById('colab-style');
+    if(old) old.remove();
   }
-  // show dashboard section, hide others
+
+  // show dashboard
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   document.getElementById('sec-dashboard').classList.add('active');
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('nav-dash').classList.add('active');
+
   await loadAll();
+  await loadPedidos();
   buildDashboard();
 }
 
